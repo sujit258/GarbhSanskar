@@ -340,7 +340,7 @@ function buildSyntheticNames({ letters = [], gender, origin, min = 12, seed }) {
   return uniqueNames(seededShuffle(synthetic, `${seed}_synthetic`)).slice(0, min * 2);
 }
 
-function sanitizeNameResults(result, { gender, origin, letter, nakshatra, rashi, min }) {
+function sanitizeNameResults(result, { gender, origin, letter, nakshatra, rashi, min, strictByLetter = false }) {
   const preferredLetters = getPreferredLetters({ letter, nakshatra });
   const seed = `${rashi || ""}|${nakshatra || ""}|${letter || ""}|${gender || ""}|${origin || ""}`;
 
@@ -352,17 +352,26 @@ function sanitizeNameResults(result, { gender, origin, letter, nakshatra, rashi,
   const matchingAi = normalizedAi.filter((item) => matchesLetter(item, preferredLetters));
   const nonMatchingAi = normalizedAi.filter((item) => !matchesLetter(item, preferredLetters));
 
-  const fallbackNames = getFallbackNames({ gender, origin, letter, nakshatra, rashi, min });
-  const combined = uniqueNames([
-    ...seededShuffle(matchingAi, `${seed}_match`),
-    ...fallbackNames,
-    ...seededShuffle(nonMatchingAi, `${seed}_rest`),
-  ]);
+  const fallbackNames = getFallbackNames({ gender, origin, letter, nakshatra, rashi, min, strictByLetter });
+  const combined = uniqueNames(strictByLetter && preferredLetters.length
+    ? [
+      ...seededShuffle(matchingAi, `${seed}_match`),
+      ...fallbackNames,
+    ]
+    : [
+      ...seededShuffle(matchingAi, `${seed}_match`),
+      ...fallbackNames,
+      ...seededShuffle(nonMatchingAi, `${seed}_rest`),
+    ]);
 
-  return { names: combined.slice(0, min) };
+  const finalNames = strictByLetter && preferredLetters.length
+    ? combined.filter((item) => matchesLetter(item, preferredLetters))
+    : combined;
+
+  return { names: finalNames.slice(0, min) };
 }
 
-function getFallbackNames({ gender, letter, origin, nakshatra, rashi, min = 12 }) {
+function getFallbackNames({ gender, letter, origin, nakshatra, rashi, min = 12, strictByLetter = false }) {
   const normalizedGender = gender === "both" ? "all" : gender;
   const normalizedOrigin = origin === "दोन्ही" ? null : origin;
   const preferredLetters = getPreferredLetters({ letter, nakshatra });
@@ -381,7 +390,9 @@ function getFallbackNames({ gender, letter, origin, nakshatra, rashi, min = 12 }
   if (preferredLetters.length) {
     const byLetter = filtered.filter((item) => matchesLetter(item, preferredLetters));
     const remaining = filtered.filter((item) => !matchesLetter(item, preferredLetters));
-    filtered = [...seededShuffle(byLetter, `${seed}_by_letter`), ...seededShuffle(remaining, `${seed}_remaining`)];
+    filtered = strictByLetter
+      ? [...seededShuffle(byLetter, `${seed}_by_letter`)]
+      : [...seededShuffle(byLetter, `${seed}_by_letter`), ...seededShuffle(remaining, `${seed}_remaining`)];
   } else {
     filtered = seededShuffle(filtered, `${seed}_all`);
   }
@@ -1022,9 +1033,9 @@ Return ONLY this JSON with at least 15 names:
   try {
     const text = await callAI(MARATHI_SYSTEM, prompt);
     const parsed = safeParseJSON(text);
-    return sanitizeNameResults(parsed, { letter, gender, origin, min: 15 });
+    return sanitizeNameResults(parsed, { letter, gender, origin, min: 15, strictByLetter: true });
   } catch {
-    return { names: getFallbackNames({ letter, gender, origin, min: 15 }) };
+    return { names: getFallbackNames({ letter, gender, origin, min: 15, strictByLetter: true }) };
   }
 }
 
@@ -1037,6 +1048,7 @@ const GARBH_KATHA_POOL = [
     title: "अभिमन्यू गर्भकथा",
     era: "महाभारत",
     summary: "गर्भात असतानाच अभिमन्यूने चक्रव्यूह भेदण्याची विद्या ऐकली, असे पारंपरिक कथन आहे.",
+    fullStory: "महाभारतातील पारंपरिक कथेनुसार, अर्जुनाने सुभद्रेला चक्रव्यूह भेदण्याची रचना सांगत असताना गर्भातील अभिमन्यू ते एकाग्रतेने ऐकत होता. कथा सांगते की तो प्रवेश करण्याची पद्धत समजला, परंतु कथन अर्धवट राहिल्याने बाहेर येण्याची पद्धत पूर्ण ऐकू आली नाही. पुढे युद्धभूमीवर अभिमन्यूने विलक्षण धैर्य दाखवले आणि कठीण परिस्थितीतही पराक्रम, निष्ठा आणि कर्तव्य निभावले. या कथेतून गर्भसंस्काराचा भावार्थ असा घेतला जातो की आई जे ऐकते, बोलते आणि अनुभवते त्याचे सूक्ष्म तरंग गर्भापर्यंत पोहोचतात. म्हणून गर्भावस्थेत शांत कथन, सकारात्मक शब्द, आणि आत्मविश्वास देणारे संवाद हे बाळाच्या भावविश्वाला आधार देतात.",
     moral: "गर्भातील बाळ आईचे शब्द, भावना आणि वातावरण यांचा सूक्ष्म प्रभाव घेत असते.",
     practice: "आज 7 मिनिटे शांत बसून बाळाशी प्रेमाने बोला: ‘तू धैर्यवान, शहाणा आणि शांत आहेस.’",
   },
@@ -1045,6 +1057,7 @@ const GARBH_KATHA_POOL = [
     title: "श्रीकृष्ण जन्मपूर्व कथा",
     era: "भागवत",
     summary: "मातेच्या मनातील श्रद्धा, प्रार्थना आणि विश्वास यांनी कठीण परिस्थितीतही आशेचा दीप जिवंत ठेवला.",
+    fullStory: "भागवत परंपरेत श्रीकृष्णाच्या जन्मकथेत संकट, भीती आणि अनिश्चितता असतानाही माता-पित्यांनी श्रद्धा आणि धैर्य टिकवले, असा संदेश मिळतो. देवकीच्या अंतर्मनातील प्रार्थना, कंसाच्या भीतीतही आशेचा धागा न सोडणे, आणि जीवनरक्षणासाठी घेतलेले शांत व विचारपूर्वक निर्णय — हे या कथेतले प्रमुख संस्कार आहेत. या कथेला गर्भसंस्काराच्या दृष्टीने पाहिल्यास, आईच्या मनातील विश्वास आणि स्थैर्य बाळासाठी सुरक्षित भावनिक वातावरण निर्माण करतात. ताणतणावाच्या क्षणीही श्वासावर लक्ष देणे, देवस्मरण, आणि प्रेमळ संवाद यामुळे मन संतुलित राहते. श्रीकृष्णकथा आपल्याला शिकवते की अंधारातही आशेचा प्रकाश ठेवला तर पुढील प्रवास अधिक दृढतेने करता येतो.",
     moral: "आईचे अंतर्मन स्थिर असेल तर बाळासाठी सुरक्षित भावनिक पाया तयार होतो.",
     practice: "रात्री 5 मिनिटे दीर्घ श्वसन करून ‘ॐ नमो भगवते वासुदेवाय’चा मृदू जप करा.",
   },
@@ -1053,6 +1066,7 @@ const GARBH_KATHA_POOL = [
     title: "रामकथा – आदर्श मूल्यांचा संस्कार",
     era: "रामायण",
     summary: "रामकथा सत्य, संयम, कर्तव्य आणि आदर्श आचरण यांचे बळ देते.",
+    fullStory: "रामायणातील रामकथा ही केवळ इतिहासकथा नसून मूल्यसंस्काराची शाळा आहे. श्रीरामांच्या जीवनात सत्यनिष्ठा, कर्तव्यपालन, नम्रता, मोठ्यांचा आदर आणि वचनपूर्ती या गुणांचे सातत्य दिसते. कठीण प्रसंग आले तरी उतावळेपणा न करता संयमाने योग्य निर्णय घेणे — हा या कथेतला मध्यवर्ती संदेश आहे. गर्भसंस्काराच्या संदर्भात या कथेतून आईला सकारात्मक जीवनमूल्ये रोजच्या दिनचर्येत आणण्याची प्रेरणा मिळते. घरी शांत भाषा, परस्पर आदर, नियमीत प्रार्थना आणि कृतज्ञता यामुळे घरचे वातावरण उबदार व स्थिर होते. असे वातावरण बाळाच्या मानसिक, भावनिक आणि सांस्कृतिक विकासासाठी पोषक मानले जाते.",
     moral: "गर्भसंस्कारात मूल्याधारित कथा मनाला दिशा देतात आणि सकारात्मक विचार वाढवतात.",
     practice: "आज ‘सत्य, संयम, करुणा’ ही 3 मूल्ये लिहा आणि बाळाला मोठ्याने वाचा.",
   },
@@ -1061,6 +1075,7 @@ const GARBH_KATHA_POOL = [
     title: "सीता माता – धैर्य आणि शांत सामर्थ्य",
     era: "रामायण",
     summary: "सीता मातेची कथा कठीण प्रसंगातही अंतरीची शांतता, स्वाभिमान आणि श्रद्धा टिकवण्याची प्रेरणा देते.",
+    fullStory: "सीता मातेचे चरित्र धैर्य, पवित्रता, स्वाभिमान आणि अंतरिक शांततेचे प्रतीक मानले जाते. आव्हानात्मक परिस्थितीतही त्यांनी संतुलित मन, श्रद्धा आणि आत्मविश्वास कायम ठेवला. ही कथा सांगते की खरी शक्ती केवळ बाह्य सामर्थ्यात नसून मनाच्या स्थैर्यात असते. गर्भवती आईसाठी हा संदेश अत्यंत महत्त्वाचा आहे: भावनिक चढ-उतारांच्या काळात स्वतःशी प्रेमळ वागणे, शांत श्वसन करणे, आणि अंतर्मनाला आधार देणारे विचार निवडणे. सीता मातेच्या कथेतून शिकवण अशी मिळते की मृदुता आणि ठामपणा एकत्र राहू शकतात. आईचे हे संतुलित व्यक्तिमत्त्व बाळासाठी सुरक्षित आणि विश्वासार्ह भावविश्व तयार करते.",
     moral: "आईचे भावनिक संतुलन बाळासाठी स्थैर्याचे वातावरण तयार करते.",
     practice: "आज 10 मिनिटे ‘कृतज्ञता ध्यान’ करा आणि स्वतःबद्दल 3 सकारात्मक वाक्ये म्हणा.",
   },
@@ -1069,6 +1084,7 @@ const GARBH_KATHA_POOL = [
     title: "हनुमानकथा – बल, बुद्धी आणि भक्ती",
     era: "रामायण",
     summary: "हनुमानाच्या कथेत निडरता, सेवाभाव आणि एकाग्रता यांचे सुंदर उदाहरण दिसते.",
+    fullStory: "हनुमानजींच्या कथेत शरीरबलाइतकेच मनोबल, नम्रता आणि भक्तिभाव यांना महत्त्व दिले जाते. त्यांनी प्रत्येक कार्य ‘सेवा’ म्हणून केले — अहंकाराशिवाय, पण पूर्ण एकाग्रतेने. संकटकाळात घाबरून न जाता ध्येयावर लक्ष ठेवणे, योग्य मार्गदर्शन स्वीकारणे, आणि सातत्य राखणे हे गुण त्यांच्या चरित्रातून स्पष्ट होतात. गर्भसंस्काराच्या दृष्टीने या कथेतून आईला ‘शांत शक्ती’चा संदेश मिळतो: नियमित श्वसन, सौम्य हालचाल, प्रार्थना, आणि सकारात्मक आत्मसंवाद. दिवसातल्या छोट्या सवयी — जसे दीर्घ श्वास, सौम्य मंत्रजप, आणि प्रेमळ बोलणे — मनाला स्थिर करतात. स्थिर मनातूनच बाळासाठी सुरक्षित ऊर्जा आणि सांत्वनाचा प्रवाह निर्माण होतो.",
     moral: "शांत श्वास, मजबूत मन आणि सेवाभाव गर्भसंस्काराचा महत्त्वाचा भाग ठरू शकतो.",
     practice: "सकाळी 11 दीर्घ श्वास घेऊन ‘हनुमान चालिसेतील’ 2 ओळी शांतपणे ऐका/वाचा.",
   },
@@ -1077,18 +1093,27 @@ const GARBH_KATHA_POOL = [
     title: "लव-कुश गर्भकथा",
     era: "रामायण उत्तरकांड परंपरा",
     summary: "लव-कुशांच्या कथेत शिक्षण, संगीत, शौर्य आणि विनम्रता यांचे संतुलन दिसते.",
+    fullStory: "लव-कुशांच्या परंपरागत कथांमध्ये संस्कारयुक्त शिक्षण, संगीत, स्मरणशक्ती, आणि शौर्य यांचा सुंदर संगम दिसतो. संतुलित मार्गदर्शन, नियमित अभ्यास, गुरुजनांचा सन्मान आणि नम्र वाणी यामुळे त्यांच्या व्यक्तिमत्त्वात तेज आणि स्थैर्य निर्माण झाले, असे वर्णन आढळते. या कथेला गर्भसंस्काराच्या संदर्भात पाहिले तर आईने गर्भावस्थेत ऐकलेले संगीत, वाचलेल्या कथा, आणि घरातील संवाद यांचा एकत्रित परिणाम महत्त्वाचा मानला जातो. म्हणूनच सातत्यपूर्ण चांगले वाचन, मृदू संगीत, आणि प्रेमळ संभाषण या तीन गोष्टी गर्भसंस्कारात उपयुक्त ठरतात. लव-कुशकथा सांगते की ज्ञान आणि विनम्रता यांचे संतुलनच खऱ्या संस्कारांची ओळख आहे.",
     moral: "गर्भावस्थेत ज्ञान, संगीत आणि सुसंवाद यांचा सातत्याने सराव लाभदायक ठरतो.",
     practice: "आज 8 मिनिटे मुलांसाठी उपयुक्त संस्कारकथा किंवा स्तोत्र मृदू स्वरात वाचा.",
   },
 ];
 
 export async function fetchGarbhKatha(week) {
-  const seed = getDaySeed(week);
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const todayLabel = today.toLocaleDateString("mr-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const seed = hashString(todayKey);
   const currentStory = pickFromPool(GARBH_KATHA_POOL, seed, 31);
   const stories = getSeededUniqueItems(GARBH_KATHA_POOL, seed, 6, 37);
 
   return {
     title: "गर्भकथा",
+    dayLabel: todayLabel,
     source: "सांस्कृतिक कथा परंपरा (प्रेरणादायी संदर्भ)",
     referenceUrl: "https://www.youtube.com/watch?v=YP86rdFNET0",
     currentStory,
