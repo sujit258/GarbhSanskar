@@ -57,6 +57,7 @@ const QUICK_CARDS = [
   { id: "garbhsanskar", emoji: "🕉️", label: "गर्भसंस्कार", color: "#FFF2D8", border: "#D1952A", text: "#A66D08", iconBg: "#FFE6B0" },
   { id: "games", emoji: "🎯", label: "खेळ", color: "#E5EEFF", border: "#3F6FD8", text: "#2D56B8", iconBg: "#D1DEFF" },
   { id: "stories", emoji: "📖", label: "गर्भकथा", color: "#FFF1E4", border: "#BE7A2B", text: "#8F5716", iconBg: "#FFE0BF" },
+  { id: "garbhgeeta", emoji: "📜", label: "गर्भगीता", color: "#E9F1FF", border: "#4A6EC7", text: "#2F4E9E", iconBg: "#D8E6FF" },
   { id: "names", emoji: "👶", label: "नाव सुचवणी", color: "#FFE6F1", border: "#D9488C", text: "#B93373", iconBg: "#FFD1E7" },
 ];
 

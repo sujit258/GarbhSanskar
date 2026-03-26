@@ -1113,10 +1113,99 @@ export async function fetchGarbhKatha(week) {
 
   return {
     title: "गर्भकथा",
+    subtitle: "Story of the Day",
     dayLabel: todayLabel,
     source: "सांस्कृतिक कथा परंपरा (प्रेरणादायी संदर्भ)",
     referenceUrl: "https://www.youtube.com/watch?v=YP86rdFNET0",
     currentStory,
     stories,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. Garbh Geeta (Bhagavad Gita inspired detailed guidance)
+// ─────────────────────────────────────────────────────────────────────────────
+const GARBH_GEETA_POOL = [
+  {
+    id: "2-47",
+    chapter: "अध्याय २",
+    verse: "श्लोक ४७",
+    sanskrit: "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥",
+    transliteration: "karmaṇy-evādhikāras te mā phaleṣu kadācana",
+    meaningMarathi: "तुझा अधिकार कर्म करण्यावर आहे; फळावर नाही. म्हणून निराश न होता कर्तव्य करत राहावे.",
+    pregnancyInsight: "गर्भावस्थेत रोजच्या छोट्या सवयी — योग्य आहार, विश्रांती, शांत श्वसन — यांवर लक्ष केंद्रित करा; त्वरित परिणामाची चिंता कमी करा.",
+    dailyPractice: "आज 10 मिनिटे ‘मी माझे योग्य कर्म प्रेमाने करते’ हा संकल्प जपा.",
+  },
+  {
+    id: "2-14",
+    chapter: "अध्याय २",
+    verse: "श्लोक १४",
+    sanskrit: "मात्रास्पर्शास्तु कौन्तेय शीतोष्णसुखदुःखदाः। आगमापायिनोऽनित्यास्तांस्तितिक्षस्व भारत॥",
+    transliteration: "mātrā-sparśās tu kaunteya śītoṣṇa-sukha-duḥkha-dāḥ",
+    meaningMarathi: "उष्ण-शीत, सुख-दुःख हे येतात-जातात; ते अनित्य आहेत. धैर्याने सहन करावे.",
+    pregnancyInsight: "मूड बदल, थकवा, शारीरिक अस्वस्थता हे टप्प्याटप्प्याने बदलतात. ही अवस्था कायमची नाही हे लक्षात ठेवणे मानसिक स्थैर्य वाढवते.",
+    dailyPractice: "श्वास घेताना ‘शांत’, सोडताना ‘स्थिर’ असा 5 मिनिटांचा सराव करा.",
+  },
+  {
+    id: "6-5",
+    chapter: "अध्याय ६",
+    verse: "श्लोक ५",
+    sanskrit: "उद्धरेदात्मनात्मानं नात्मानमवसादयेत्। आत्मैव ह्यात्मनो बन्धुरात्मैव रिपुरात्मनः॥",
+    transliteration: "uddhared ātmanātmānaṁ nātmānam avasādayet",
+    meaningMarathi: "स्वतःच्या मनाला उन्नत करावे; स्वतःला खचू देऊ नये. मनच मित्रही असते आणि शत्रूही.",
+    pregnancyInsight: "स्वतःशी कसे बोलता याचा थेट परिणाम भावनिक आरोग्यावर होतो. प्रेमळ self-talk गर्भकाल अधिक संतुलित ठेवतो.",
+    dailyPractice: "आरशासमोर 3 सकारात्मक वाक्ये म्हणा: ‘मी सक्षम आहे, मी सुरक्षित आहे, माझे बाळ सुरक्षित आहे.’",
+  },
+  {
+    id: "12-13",
+    chapter: "अध्याय १२",
+    verse: "श्लोक १३",
+    sanskrit: "अद्वेष्टा सर्वभूतानां मैत्रः करुण एव च। निर्ममो निरहङ्कारः समदुःखसुखः क्षमी॥",
+    transliteration: "adveṣṭā sarva-bhūtānāṁ maitraḥ karuṇa eva ca",
+    meaningMarathi: "जो सर्वांशी मैत्री, करुणा, नम्रता आणि क्षमा ठेवतो तो प्रिय होतो.",
+    pregnancyInsight: "घरातील शांत, करुणामय संवाद आईचा ताण कमी करतो आणि बाळासाठी भावनिक सुरक्षितता निर्माण करतो.",
+    dailyPractice: "आज किमान एका व्यक्तीशी जाणूनबुजून सौम्य आणि कृतज्ञतेने बोला.",
+  },
+  {
+    id: "17-14",
+    chapter: "अध्याय १७",
+    verse: "श्लोक १४",
+    sanskrit: "देवद्विजगुरुप्राज्ञपूजनं शौचमार्जवम्। ब्रह्मचर्यमहिंसा च शारीरं तप उच्यते॥",
+    transliteration: "deva-dvija-guru-prājña-pūjanaṁ śaucam ārjavam",
+    meaningMarathi: "शुचिता, साधेपणा, अहिंसा आणि आदरयुक्त आचरण हे शरीरसंबंधी तप मानले जाते.",
+    pregnancyInsight: "दिनचर्येत स्वच्छता, सौम्य हालचाल, संयमित आहार आणि शांत वाणी ठेवल्यास शरीर-मन दोन्ही संतुलित राहतात.",
+    dailyPractice: "आज ‘सात्त्विक दिवस’ पाळा: स्वच्छ आहार, पुरेसे पाणी, आणि हलकी चाल.",
+  },
+  {
+    id: "18-66",
+    chapter: "अध्याय १८",
+    verse: "श्लोक ६६",
+    sanskrit: "सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज। अहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः॥",
+    transliteration: "sarva-dharmān parityajya mām ekaṁ śaraṇaṁ vraja",
+    meaningMarathi: "भीती सोडून श्रद्धेने समर्पण केल्यास मनाला आधार आणि निश्चिंतता मिळते.",
+    pregnancyInsight: "गर्भावस्थेत सर्व गोष्टी नियंत्रित ठेवण्याचा ताण कमी करून विश्वास, प्रार्थना आणि स्वीकार यांवर भर दिल्यास मानसिक आराम मिळतो.",
+    dailyPractice: "झोपण्यापूर्वी 5 मिनिटे प्रार्थना करा आणि दिवसातील 3 कृतज्ञता नोंदी लिहा.",
+  },
+];
+
+export async function fetchGarbhGeeta(week) {
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const todayLabel = today.toLocaleDateString("mr-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const seed = hashString(`${todayKey}_${week}`);
+  const todayVerse = pickFromPool(GARBH_GEETA_POOL, seed, 41);
+  const verses = getSeededUniqueItems(GARBH_GEETA_POOL, seed, 6, 43);
+
+  return {
+    title: "गर्भगीता",
+    dayLabel: todayLabel,
+    subtitle: "गीता-प्रेरित दैनंदिन मार्गदर्शन",
+    note: "ही आध्यात्मिक प्रेरणा आहे; वैद्यकीय निर्णयांसाठी डॉक्टरांचा सल्ला घ्या.",
+    todayVerse,
+    verses,
   };
 }

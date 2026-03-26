@@ -11,7 +11,7 @@ import {
 import { getPregnancyGamesForWeek } from "../constants/pregnancyGames";
 import {
   fetchBabyDevelopment, fetchTalkToBaby,
-  fetchYoga, fetchNutrition, fetchGarbhSanskar, fetchGarbhKatha,
+  fetchYoga, fetchNutrition, fetchGarbhSanskar, fetchGarbhKatha, fetchGarbhGeeta,
 } from "../services/claudeApi";
 
 const TABS = [
@@ -21,6 +21,7 @@ const TABS = [
   { id: "nutrition", emoji: "🥗", label: "पोषण" },
   { id: "games", emoji: "🎯", label: "खेळ" },
   { id: "stories", emoji: "📖", label: "कथा" },
+  { id: "garbhgeeta", emoji: "📜", label: "गीता" },
   { id: "garbhsanskar", emoji: "🕉️", label: "संस्कार" },
 ];
 
@@ -52,6 +53,7 @@ export default function WeekDetailScreen({ week, initialTab = "baby", colors = C
       else if (tabId === "nutrition") result = await fetchNutrition(week);
       else if (tabId === "games") result = getPregnancyGamesForWeek(week);
       else if (tabId === "stories") result = await fetchGarbhKatha(week);
+      else if (tabId === "garbhgeeta") result = await fetchGarbhGeeta(week);
       else if (tabId === "garbhsanskar") result = await fetchGarbhSanskar(week);
       setData((p) => ({ ...p, [cacheKey]: result }));
     } catch (e) {
@@ -107,6 +109,7 @@ export default function WeekDetailScreen({ week, initialTab = "baby", colors = C
             {activeTab === "nutrition" && <NutritionTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
             {activeTab === "games" && <GamesTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
             {activeTab === "stories" && <StoriesTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
+            {activeTab === "garbhgeeta" && <GarbhGeetaTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
             {activeTab === "garbhsanskar" && <GarbhSanskarTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
           </>
         )}
@@ -355,10 +358,11 @@ function StoriesTab({ data, tri, colors, isDarkMode }) {
 
       {currentStory && (
         <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#FFF4E8" }}>
-          <Text style={[styles.cardTitle, { color: darkTextColor }]}>⭐ आजची प्रमुख कथा</Text>
+          <Text style={[styles.cardTitle, { color: darkTextColor }]}>⭐ Story of the Day</Text>
+          <Text style={[styles.storyDayText, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{data?.dayLabel || "आजचा दिवस"}</Text>
           <Text style={[styles.storyName, { color: darkTextColor }]}>{currentStory.title}</Text>
           <Text style={[styles.storyEra, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{currentStory.era}</Text>
-          <Text style={[styles.storyParagraph, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{currentStory.summary}</Text>
+          <Text style={[styles.storyParagraph, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{currentStory.fullStory || currentStory.summary}</Text>
 
           <View style={[styles.storyMoralBox, isDarkMode && { backgroundColor: "#000000", borderColor: "#FFFFFF" }]}>
             <Text style={[styles.storyMoralLabel, { color: darkTextColor }]}>बोध:</Text>
@@ -370,11 +374,13 @@ function StoriesTab({ data, tri, colors, isDarkMode }) {
       )}
 
       <SectionCard style={darkSectionStyle}>
-        <Text style={[styles.cardTitle, { color: darkTextColor }]}>🪔 निवडक गर्भकथा</Text>
+        <Text style={[styles.cardTitle, { color: darkTextColor }]}>🪔 सर्व गर्भकथा (सविस्तर)</Text>
         {stories.map((story) => (
           <View key={story.id} style={[styles.storyListItem, isDarkMode && { borderBottomColor: "#333" }]}>
             <Text style={[styles.storyListTitle, { color: darkTextColor }]}>{story.title}</Text>
-            <Text style={[styles.storyListSummary, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{story.summary}</Text>
+            <Text style={[styles.storyListSummary, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{story.fullStory || story.summary}</Text>
+            <Text style={[styles.storyListMoral, { color: darkTextColor }]}>बोध: {story.moral}</Text>
+            <Text style={[styles.storyListPractice, { color: darkTextColor }]}>आजचा उपक्रम: {story.practice}</Text>
           </View>
         ))}
       </SectionCard>
@@ -382,6 +388,52 @@ function StoriesTab({ data, tri, colors, isDarkMode }) {
       <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#EEF4FF" }}>
         <Text style={[styles.cardTitle, { color: darkTextColor }]}>🔗 संदर्भ</Text>
         <Text style={[styles.storyRefText, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>विषय प्रेरणा: {data?.referenceUrl}</Text>
+      </SectionCard>
+    </View>
+  );
+}
+
+function GarbhGeetaTab({ data, tri, colors, isDarkMode }) {
+  const darkSectionStyle = isDarkMode ? { backgroundColor: "#000000", borderColor: "#000000" } : null;
+  const darkTextColor = isDarkMode ? "#FFFFFF" : colors.textPrimary;
+  const todayVerse = data?.todayVerse;
+  const verses = data?.verses || [];
+
+  return (
+    <View style={styles.tabContent}>
+      <GradientHeader emoji="📜" title={data?.title || "गर्भगीता"} subtitle={data?.subtitle || "गीता-प्रेरित मार्गदर्शन"} color="#355C9C" />
+
+      {todayVerse && (
+        <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#EEF4FF" }}>
+          <Text style={[styles.cardTitle, { color: darkTextColor }]}>🌞 आजचा गीता श्लोक</Text>
+          <Text style={[styles.storyDayText, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{data?.dayLabel || "आजचा दिवस"}</Text>
+          <Text style={[styles.geetaMeta, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{todayVerse.chapter} • {todayVerse.verse}</Text>
+          <Text style={[styles.geetaSanskrit, { color: darkTextColor }]}>{todayVerse.sanskrit}</Text>
+          <Text style={[styles.geetaTranslit, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{todayVerse.transliteration}</Text>
+          <Text style={[styles.geetaHeading, { color: darkTextColor }]}>अर्थ</Text>
+          <Text style={[styles.geetaBody, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{todayVerse.meaningMarathi}</Text>
+          <Text style={[styles.geetaHeading, { color: darkTextColor }]}>गर्भावस्थेतील अर्थपूर्ण उपयोग</Text>
+          <Text style={[styles.geetaBody, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{todayVerse.pregnancyInsight}</Text>
+          <Text style={[styles.geetaPractice, { color: darkTextColor }]}>आजचा सराव: {todayVerse.dailyPractice}</Text>
+        </SectionCard>
+      )}
+
+      <SectionCard style={darkSectionStyle}>
+        <Text style={[styles.cardTitle, { color: darkTextColor }]}>📚 गर्भगीता – सविस्तर मार्गदर्शन</Text>
+        {verses.map((item) => (
+          <View key={item.id} style={[styles.geetaItem, isDarkMode && { borderBottomColor: "#333" }]}>
+            <Text style={[styles.geetaMeta, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{item.chapter} • {item.verse}</Text>
+            <Text style={[styles.geetaSanskrit, { color: darkTextColor }]}>{item.sanskrit}</Text>
+            <Text style={[styles.geetaBody, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{item.meaningMarathi}</Text>
+            <Text style={[styles.geetaBody, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{item.pregnancyInsight}</Text>
+            <Text style={[styles.geetaPractice, { color: darkTextColor }]}>सराव: {item.dailyPractice}</Text>
+          </View>
+        ))}
+      </SectionCard>
+
+      <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#FFF6EC" }}>
+        <Text style={[styles.cardTitle, { color: darkTextColor }]}>⚠️ टीप</Text>
+        <Text style={[styles.storyRefText, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{data?.note}</Text>
       </SectionCard>
     </View>
   );
@@ -612,6 +664,7 @@ const styles = StyleSheet.create({
   poseSteps: { fontSize: FONTS.small, color: COLORS.textSecondary, lineHeight: 20 },
   nutrientText: { fontSize: FONTS.h4, fontWeight: "700", color: "#388E3C", textAlign: "center" },
   gamesFocusText: { fontSize: FONTS.body, color: "#315A95", lineHeight: 22 },
+  storyDayText: { fontSize: FONTS.small, marginBottom: SPACING.xs, fontWeight: "700" },
   storyName: { fontSize: FONTS.h4, fontWeight: "800", marginBottom: 4 },
   storyEra: { fontSize: FONTS.small, fontWeight: "600", marginBottom: SPACING.sm },
   storyParagraph: { fontSize: FONTS.body, lineHeight: 22, marginBottom: SPACING.sm },
@@ -633,7 +686,20 @@ const styles = StyleSheet.create({
   },
   storyListTitle: { fontSize: FONTS.body, fontWeight: "700", marginBottom: 4 },
   storyListSummary: { fontSize: FONTS.small, lineHeight: 20 },
+  storyListMoral: { fontSize: FONTS.small, lineHeight: 20, marginTop: 6, fontWeight: "700" },
+  storyListPractice: { fontSize: FONTS.small, lineHeight: 20, marginTop: 4 },
   storyRefText: { fontSize: FONTS.small, lineHeight: 21 },
+  geetaItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.sm,
+  },
+  geetaMeta: { fontSize: FONTS.small, fontWeight: "700", marginBottom: 6 },
+  geetaSanskrit: { fontSize: FONTS.body, lineHeight: 24, fontWeight: "700", marginBottom: 6 },
+  geetaTranslit: { fontSize: FONTS.tiny, lineHeight: 18, marginBottom: 8 },
+  geetaHeading: { fontSize: FONTS.small, fontWeight: "800", marginTop: 4, marginBottom: 4 },
+  geetaBody: { fontSize: FONTS.small, lineHeight: 21, marginBottom: 6 },
+  geetaPractice: { fontSize: FONTS.small, lineHeight: 21, fontWeight: "700", marginTop: 2 },
   gameCard: { borderColor: "#DDE8FB" },
   gameHeader: {
     flexDirection: "row",
