@@ -37,7 +37,7 @@ export default function WeekDetailScreen({ week, initialTab = "baby", colors = C
   const tri = TRIMESTER_INFO[trimester];
 
   function getCacheKey(tabId) {
-    return (tabId === "garbhsanskar" || tabId === "stories") ? `${tabId}_${week}_${todayKey}` : `${tabId}_${week}`;
+    return (tabId === "garbhsanskar" || tabId === "stories" || tabId === "games") ? `${tabId}_${week}_${todayKey}` : `${tabId}_${week}`;
   }
 
   async function loadTab(tabId) {

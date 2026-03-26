@@ -260,12 +260,37 @@ export function getPregnancyGamesForWeek(week) {
   const month = getPregnancyMonthFromWeek(week);
   const plan = MONTH_GAME_PLANS[month];
 
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const daySeed = Array.from(todayKey).reduce((acc, char) => acc + char.charCodeAt(0), 0) + (week * 17);
+
+  const monthGamePool = [
+    ...plan.games,
+    ...(MONTH_GAME_PLANS[Math.max(1, month - 1)]?.games || []),
+    ...(MONTH_GAME_PLANS[Math.min(9, month + 1)]?.games || []),
+  ];
+
+  const uniqueGames = [];
+  const seen = new Set();
+  let offset = 0;
+  while (uniqueGames.length < 3 && seen.size < monthGamePool.length) {
+    const index = Math.abs(daySeed + offset) % monthGamePool.length;
+    if (!seen.has(index)) {
+      seen.add(index);
+      uniqueGames.push(monthGamePool[index]);
+    }
+    offset += 1;
+  }
+
+  const dailyGames = uniqueGames.length ? uniqueGames : plan.games;
+
   return {
-    title: `महिना ${month} साठी आईसाठी खेळ`,
+    title: `महिना ${month} साठी आईसाठी खेळ (आजचा प्लॅन)`,
     month,
+    dayLabel: today.toLocaleDateString("mr-IN", { weekday: "long", day: "numeric", month: "long" }),
     focus: plan.focus,
     safetyNote: plan.safetyNote,
-    games: plan.games,
+    games: dailyGames,
     benefits: [
       "हलकी मानसिक चपळता टिकवण्यास मदत",
       "मन शांत ठेवण्यास उपयोगी",
