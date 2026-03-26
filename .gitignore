@@ -10,3 +10,4 @@ expo-web.log
 node-test.log
 {src/
 name.includes('expo')).join('
+.vercel

@@ -12,6 +12,7 @@ import WeeksScreen from "./src/screens/WeeksScreen";
 import WeekDetailScreen from "./src/screens/WeekDetailScreen";
 import NamesScreen from "./src/screens/NamesScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import VercelAnalytics from "./src/components/VercelAnalytics";
 
 const STORAGE_KEY = "garbh_user_profile";
 const SAVED_NAMES_KEY = "garbh_saved_names";
@@ -202,6 +203,7 @@ export default function App() {
         ) : (
           <OnboardingScreen onComplete={saveProfile} />
         )}
+        <VercelAnalytics />
       </SafeAreaView>
     );
   }
@@ -293,6 +295,7 @@ export default function App() {
             </View>
           </View>
         </View>
+        <VercelAnalytics />
       </SafeAreaView>
     );
   }
@@ -313,6 +316,7 @@ export default function App() {
           </TouchableOpacity>
         </View>
         {renderDetailScreen(currentStack)}
+        <VercelAnalytics />
       </SafeAreaView>
     );
   }
@@ -357,6 +361,7 @@ export default function App() {
           );
         })}
       </View>
+      <VercelAnalytics />
     </SafeAreaView>
   );
 }
