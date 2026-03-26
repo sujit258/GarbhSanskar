@@ -37,7 +37,7 @@ export default function WeekDetailScreen({ week, initialTab = "baby", colors = C
   const tri = TRIMESTER_INFO[trimester];
 
   function getCacheKey(tabId) {
-    return tabId === "garbhsanskar" ? `${tabId}_${week}_${todayKey}` : `${tabId}_${week}`;
+    return (tabId === "garbhsanskar" || tabId === "stories") ? `${tabId}_${week}_${todayKey}` : `${tabId}_${week}`;
   }
 
   async function loadTab(tabId) {
@@ -350,7 +350,6 @@ function StoriesTab({ data, tri, colors, isDarkMode }) {
   const darkSectionStyle = isDarkMode ? { backgroundColor: "#000000", borderColor: "#000000" } : null;
   const darkTextColor = isDarkMode ? "#FFFFFF" : colors.textPrimary;
   const currentStory = data?.currentStory;
-  const stories = data?.stories || [];
 
   return (
     <View style={styles.tabContent}>
@@ -372,18 +371,6 @@ function StoriesTab({ data, tri, colors, isDarkMode }) {
           <Text style={[styles.storyPractice, { color: darkTextColor }]}>🧘 आजचा संस्कार उपक्रम: {currentStory.practice}</Text>
         </SectionCard>
       )}
-
-      <SectionCard style={darkSectionStyle}>
-        <Text style={[styles.cardTitle, { color: darkTextColor }]}>🪔 सर्व गर्भकथा (सविस्तर)</Text>
-        {stories.map((story) => (
-          <View key={story.id} style={[styles.storyListItem, isDarkMode && { borderBottomColor: "#333" }]}>
-            <Text style={[styles.storyListTitle, { color: darkTextColor }]}>{story.title}</Text>
-            <Text style={[styles.storyListSummary, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{story.fullStory || story.summary}</Text>
-            <Text style={[styles.storyListMoral, { color: darkTextColor }]}>बोध: {story.moral}</Text>
-            <Text style={[styles.storyListPractice, { color: darkTextColor }]}>आजचा उपक्रम: {story.practice}</Text>
-          </View>
-        ))}
-      </SectionCard>
 
       <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#EEF4FF" }}>
         <Text style={[styles.cardTitle, { color: darkTextColor }]}>🔗 संदर्भ</Text>

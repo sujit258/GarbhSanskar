@@ -116,7 +116,7 @@ export default function App() {
 
   function handleTabPress(tabId) {
     setActiveTab(tabId);
-    if (IS_WEB && !isMobileWeb) setNavigationStack([]);
+    setNavigationStack([]);
   }
 
   function renderMainScreen() {
@@ -125,6 +125,7 @@ export default function App() {
         <HomeScreen
           profile={profile}
           onNavigate={navigate}
+          onGoToTab={handleTabPress}
           colors={currentColors}
           isMobileWeb={isMobileWeb}
         />
@@ -327,6 +328,24 @@ export default function App() {
           </TouchableOpacity>
         </View>
         {renderDetailScreen(currentStack)}
+        <View style={[styles.bottomNav, { backgroundColor: currentColors.bgCard, borderTopColor: currentColors.border }]}> 
+          {NAV_TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[styles.navTab, isActive && { backgroundColor: currentColors.bgWarm }]}
+                onPress={() => handleTabPress(tab.id)}
+              >
+                <Text style={styles.navEmoji}>{tab.emoji}</Text>
+                <Text style={[styles.navLabel, { color: currentColors.textLight }, isActive && { color: currentColors.primary, fontWeight: "700" }]}>
+                  {tab.label}
+                </Text>
+                {isActive && <View style={[styles.navIndicator, { backgroundColor: currentColors.primary }]} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         <VercelAnalytics />
       </SafeAreaView>
     );

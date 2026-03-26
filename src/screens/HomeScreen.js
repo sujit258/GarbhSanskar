@@ -61,7 +61,7 @@ const QUICK_CARDS = [
   { id: "names", emoji: "👶", label: "नाव सुचवणी", color: "#FFE6F1", border: "#D9488C", text: "#B93373", iconBg: "#FFD1E7" },
 ];
 
-export default function HomeScreen({ profile, onNavigate, colors = COLORS, isMobileWeb = false }) {
+export default function HomeScreen({ profile, onNavigate, onGoToTab, colors = COLORS, isMobileWeb = false }) {
   const isWeb = Platform.OS === "web" && !isMobileWeb;
   const currentWeek = profile?.currentWeek || 1;
   const sizeInfo = WEEK_SIZES[currentWeek] || { label: "वाटाणे", emoji: "🌿", color: colors.bgWarm };
@@ -122,7 +122,13 @@ export default function HomeScreen({ profile, onNavigate, colors = COLORS, isMob
               <TouchableOpacity
                 key={card.id}
                 style={[styles.quickCard, { backgroundColor: card.color, borderColor: card.border }]}
-                onPress={() => onNavigate("weekDetail", { week: currentWeek, tab: card.id })}
+                onPress={() => {
+                  if (card.id === "names") {
+                    onGoToTab?.("names");
+                    return;
+                  }
+                  onNavigate("weekDetail", { week: currentWeek, tab: card.id });
+                }}
               >
                 <View style={[styles.quickCardEmojiWrap, { backgroundColor: card.iconBg || "rgba(255,255,255,0.5)" }]}>
                   <Text style={styles.quickCardEmoji}>{card.emoji}</Text>
