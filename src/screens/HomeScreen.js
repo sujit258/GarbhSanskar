@@ -59,8 +59,8 @@ const QUICK_CARDS = [
   { id: "names", emoji: "👶", label: "नाव सुचवणी", color: "#FFE6F1", border: "#D9488C", text: "#B93373", iconBg: "#FFD1E7" },
 ];
 
-export default function HomeScreen({ profile, onNavigate, colors = COLORS }) {
-  const isWeb = Platform.OS === "web";
+export default function HomeScreen({ profile, onNavigate, colors = COLORS, isMobileWeb = false }) {
+  const isWeb = Platform.OS === "web" && !isMobileWeb;
   const currentWeek = profile?.currentWeek || 1;
   const sizeInfo = WEEK_SIZES[currentWeek] || { label: "वाटाणे", emoji: "🌿", color: colors.bgWarm };
   const trimester = currentWeek <= 13 ? 1 : currentWeek <= 27 ? 2 : 3;

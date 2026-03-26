@@ -121,7 +121,14 @@ export default function App() {
 
   function renderMainScreen() {
     if (activeTab === "home") {
-      return <HomeScreen profile={profile} onNavigate={navigate} colors={currentColors} />;
+      return (
+        <HomeScreen
+          profile={profile}
+          onNavigate={navigate}
+          colors={currentColors}
+          isMobileWeb={isMobileWeb}
+        />
+      );
     }
 
     if (activeTab === "weeks") {
@@ -129,6 +136,7 @@ export default function App() {
         <WeeksScreen
           currentWeek={profile.currentWeek}
           colors={currentColors}
+          isMobileWeb={isMobileWeb}
           onSelectWeek={(week) => navigate("weekDetail", { week })}
         />
       );
@@ -164,6 +172,7 @@ export default function App() {
           initialTab={stackEntry.params.tab || "baby"}
           colors={currentColors}
           isDarkMode={isDarkMode}
+          isMobileWeb={isMobileWeb}
         />
       );
     }
@@ -199,11 +208,11 @@ export default function App() {
               </View>
             </View>
             <View style={styles.webOnboardingCard}>
-              <OnboardingScreen onComplete={saveProfile} />
+              <OnboardingScreen onComplete={saveProfile} isMobileWeb={isMobileWeb} />
             </View>
           </View>
         ) : (
-          <OnboardingScreen onComplete={saveProfile} />
+          <OnboardingScreen onComplete={saveProfile} isMobileWeb={isMobileWeb} />
         )}
         <VercelAnalytics />
       </SafeAreaView>

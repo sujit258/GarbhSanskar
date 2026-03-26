@@ -12,8 +12,8 @@ const WEEK_EMOJIS = {
   36:"🥬",37:"🎃",38:"🍈",39:"🍉",40:"🍉",
 };
 
-export default function WeeksScreen({ currentWeek, onSelectWeek, colors = COLORS }) {
-  const isWeb = Platform.OS === "web";
+export default function WeeksScreen({ currentWeek, onSelectWeek, colors = COLORS, isMobileWeb = false }) {
+  const isWeb = Platform.OS === "web" && !isMobileWeb;
   const [activeTrimester, setActiveTrimester] = useState(
     currentWeek <= 13 ? 1 : currentWeek <= 27 ? 2 : 3
   );

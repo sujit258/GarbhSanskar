@@ -23,8 +23,8 @@ const TABS = [
   { id: "garbhsanskar", emoji: "🕉️", label: "संस्कार" },
 ];
 
-export default function WeekDetailScreen({ week, initialTab = "baby", colors = COLORS, isDarkMode = false }) {
-  const isWeb = Platform.OS === "web";
+export default function WeekDetailScreen({ week, initialTab = "baby", colors = COLORS, isDarkMode = false, isMobileWeb = false }) {
+  const isWeb = Platform.OS === "web" && !isMobileWeb;
   const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState({});
   const [loading, setLoading] = useState({});
