@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "गर्भसंस्कार",
+    "slug": "garbhsanskar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.garbhsanskar.app",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.garbhsanskar.app",
+      "permissions": []
+    },
+    "web": {},
+    "plugins": []
+  }
+}

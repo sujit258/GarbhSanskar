@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+expo-web-*.log
+expo-web.log
+node-test.log
+{src/
+name.includes('expo')).join('
