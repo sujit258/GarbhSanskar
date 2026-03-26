@@ -384,7 +384,6 @@ function GarbhGeetaTab({ data, tri, colors, isDarkMode }) {
   const darkSectionStyle = isDarkMode ? { backgroundColor: "#000000", borderColor: "#000000" } : null;
   const darkTextColor = isDarkMode ? "#FFFFFF" : colors.textPrimary;
   const todayVerse = data?.todayVerse;
-  const verses = data?.verses || [];
 
   return (
     <View style={styles.tabContent}>
@@ -405,18 +404,21 @@ function GarbhGeetaTab({ data, tri, colors, isDarkMode }) {
         </SectionCard>
       )}
 
-      <SectionCard style={darkSectionStyle}>
-        <Text style={[styles.cardTitle, { color: darkTextColor }]}>📚 गर्भगीता – सविस्तर मार्गदर्शन</Text>
-        {verses.map((item) => (
-          <View key={item.id} style={[styles.geetaItem, isDarkMode && { borderBottomColor: "#333" }]}>
-            <Text style={[styles.geetaMeta, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{item.chapter} • {item.verse}</Text>
-            <Text style={[styles.geetaSanskrit, { color: darkTextColor }]}>{item.sanskrit}</Text>
-            <Text style={[styles.geetaBody, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{item.meaningMarathi}</Text>
-            <Text style={[styles.geetaBody, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{item.pregnancyInsight}</Text>
-            <Text style={[styles.geetaPractice, { color: darkTextColor }]}>सराव: {item.dailyPractice}</Text>
-          </View>
-        ))}
-      </SectionCard>
+      {!!data?.translatedInsights?.length && (
+        <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#F5F8FF" }}>
+          <Text style={[styles.cardTitle, { color: darkTextColor }]}>📝 PDF मधील आशयाचे मराठी रूपांतर (सविस्तर)</Text>
+          <Text style={[styles.storyRefText, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>
+            {data?.translatedSourceNote}
+          </Text>
+          {data.translatedInsights.map((insight, index) => (
+            <View key={`${insight.title}_${index}`} style={[styles.geetaItem, isDarkMode && { borderBottomColor: "#333" }]}>
+              <Text style={[styles.geetaHeading, { color: darkTextColor }]}>{insight.title}</Text>
+              <Text style={[styles.geetaBody, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{insight.detail}</Text>
+            </View>
+          ))}
+          <Text style={[styles.storyRefText, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>संदर्भ: {data?.referenceUrl}</Text>
+        </SectionCard>
+      )}
 
       <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#FFF6EC" }}>
         <Text style={[styles.cardTitle, { color: darkTextColor }]}>⚠️ टीप</Text>

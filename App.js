@@ -13,6 +13,7 @@ import WeekDetailScreen from "./src/screens/WeekDetailScreen";
 import NamesScreen from "./src/screens/NamesScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import VercelAnalytics from "./src/components/VercelAnalytics";
+import { getDailyGeetaShlok } from "./src/services/claudeApi";
 
 const STORAGE_KEY = "garbh_user_profile";
 const SAVED_NAMES_KEY = "garbh_saved_names";
@@ -128,6 +129,7 @@ export default function App() {
           onGoToTab={handleTabPress}
           colors={currentColors}
           isMobileWeb={isMobileWeb}
+          dailyGeetaShlok={getDailyGeetaShlok()}
         />
       );
     }

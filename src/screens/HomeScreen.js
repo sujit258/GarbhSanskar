@@ -61,7 +61,7 @@ const QUICK_CARDS = [
   { id: "names", emoji: "👶", label: "नाव सुचवणी", color: "#FFE6F1", border: "#D9488C", text: "#B93373", iconBg: "#FFD1E7" },
 ];
 
-export default function HomeScreen({ profile, onNavigate, onGoToTab, colors = COLORS, isMobileWeb = false }) {
+export default function HomeScreen({ profile, onNavigate, onGoToTab, colors = COLORS, isMobileWeb = false, dailyGeetaShlok = null }) {
   const isWeb = Platform.OS === "web" && !isMobileWeb;
   const currentWeek = profile?.currentWeek || 1;
   const sizeInfo = WEEK_SIZES[currentWeek] || { label: "वाटाणे", emoji: "🌿", color: colors.bgWarm };
@@ -176,6 +176,15 @@ export default function HomeScreen({ profile, onNavigate, onGoToTab, colors = CO
             </Text>
             <Text style={[styles.quoteAuthor, { color: colors.primaryDark }]}>— गर्भसंस्कार प्रेरणा</Text>
           </SectionCard>
+
+          {!!dailyGeetaShlok && (
+            <SectionCard style={[styles.shlokaDayCard, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}> 
+              <Text style={[styles.shlokaDayTitle, { color: colors.primaryDark }]}>🕉️ गीता श्लोक ऑफ द डे</Text>
+              <Text style={[styles.shlokaDayText, { color: colors.textPrimary }]}>{dailyGeetaShlok.sanskrit}</Text>
+              <Text style={[styles.shlokaDayMeaning, { color: colors.textSecondary }]}>अर्थ: {dailyGeetaShlok.meaningMarathi}</Text>
+              <Text style={[styles.shlokaDaySource, { color: colors.textLight }]}>{dailyGeetaShlok.chapter} • {dailyGeetaShlok.verse}</Text>
+            </SectionCard>
+          )}
         </View>
       </View>
 
@@ -311,4 +320,12 @@ const styles = StyleSheet.create({
   quoteSymbol: { fontSize: 28, color: COLORS.primary, fontWeight: "800", marginBottom: SPACING.xs },
   quoteText: { fontSize: FONTS.body, lineHeight: 24, color: COLORS.textSecondary },
   quoteAuthor: { marginTop: SPACING.sm, fontSize: FONTS.small, color: COLORS.primaryDark, fontWeight: "700" },
+  shlokaDayCard: {
+    marginTop: SPACING.sm,
+    borderWidth: 1,
+  },
+  shlokaDayTitle: { fontSize: FONTS.h4, fontWeight: "800", marginBottom: SPACING.xs },
+  shlokaDayText: { fontSize: FONTS.body, lineHeight: 24, fontWeight: "700", marginBottom: SPACING.xs },
+  shlokaDayMeaning: { fontSize: FONTS.small, lineHeight: 22, marginBottom: 6 },
+  shlokaDaySource: { fontSize: FONTS.tiny, fontWeight: "700" },
 });
