@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, StatusBar, Platform,
+  SafeAreaView, StatusBar, Platform, useWindowDimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, getColors, COLORS_DARK } from "./src/constants/theme";
@@ -27,6 +27,7 @@ const NAV_TABS = [
 ];
 
 export default function App() {
+  const { width } = useWindowDimensions();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
@@ -35,6 +36,7 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const currentColors = isDarkMode ? COLORS_DARK : COLORS;
+  const isMobileWeb = IS_WEB && width < 900;
   setUIColors(currentColors);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function App() {
 
   function handleTabPress(tabId) {
     setActiveTab(tabId);
-    if (IS_WEB) setNavigationStack([]);
+    if (IS_WEB && !isMobileWeb) setNavigationStack([]);
   }
 
   function renderMainScreen() {
@@ -182,7 +184,7 @@ export default function App() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
-        {IS_WEB ? (
+        {IS_WEB && !isMobileWeb ? (
           <View style={styles.webOnboardingRoot}>
             <View style={styles.webOnboardingHero}>
               <Text style={styles.webOnboardingIcon}>🕉️</Text>
@@ -211,7 +213,7 @@ export default function App() {
   const currentStack = navigationStack[navigationStack.length - 1];
   const activeTabMeta = NAV_TABS.find((tab) => tab.id === activeTab);
 
-  if (IS_WEB) {
+  if (IS_WEB && !isMobileWeb) {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: currentColors.bg }]}>
         <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={currentColors.bg} />
