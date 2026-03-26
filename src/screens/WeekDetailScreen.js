@@ -11,7 +11,7 @@ import {
 import { getPregnancyGamesForWeek } from "../constants/pregnancyGames";
 import {
   fetchBabyDevelopment, fetchTalkToBaby,
-  fetchYoga, fetchNutrition, fetchGarbhSanskar,
+  fetchYoga, fetchNutrition, fetchGarbhSanskar, fetchGarbhKatha,
 } from "../services/claudeApi";
 
 const TABS = [
@@ -20,6 +20,7 @@ const TABS = [
   { id: "yoga", emoji: "🧘", label: "योग" },
   { id: "nutrition", emoji: "🥗", label: "पोषण" },
   { id: "games", emoji: "🎯", label: "खेळ" },
+  { id: "stories", emoji: "📖", label: "कथा" },
   { id: "garbhsanskar", emoji: "🕉️", label: "संस्कार" },
 ];
 
@@ -50,6 +51,7 @@ export default function WeekDetailScreen({ week, initialTab = "baby", colors = C
       else if (tabId === "yoga") result = await fetchYoga(week);
       else if (tabId === "nutrition") result = await fetchNutrition(week);
       else if (tabId === "games") result = getPregnancyGamesForWeek(week);
+      else if (tabId === "stories") result = await fetchGarbhKatha(week);
       else if (tabId === "garbhsanskar") result = await fetchGarbhSanskar(week);
       setData((p) => ({ ...p, [cacheKey]: result }));
     } catch (e) {
@@ -104,6 +106,7 @@ export default function WeekDetailScreen({ week, initialTab = "baby", colors = C
             {activeTab === "yoga" && <YogaTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
             {activeTab === "nutrition" && <NutritionTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
             {activeTab === "games" && <GamesTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
+            {activeTab === "stories" && <StoriesTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
             {activeTab === "garbhsanskar" && <GarbhSanskarTab data={tabData} tri={tri} colors={colors} isDarkMode={isDarkMode} />}
           </>
         )}
@@ -340,6 +343,50 @@ function GamesTab({ data, tri, colors, isDarkMode }) {
   );
 }
 
+function StoriesTab({ data, tri, colors, isDarkMode }) {
+  const darkSectionStyle = isDarkMode ? { backgroundColor: "#000000", borderColor: "#000000" } : null;
+  const darkTextColor = isDarkMode ? "#FFFFFF" : colors.textPrimary;
+  const currentStory = data?.currentStory;
+  const stories = data?.stories || [];
+
+  return (
+    <View style={styles.tabContent}>
+      <GradientHeader emoji="📖" title={data?.title || "गर्भकथा"} subtitle="पारंपरिक प्रेरणादायी कथा" color="#7A4F2A" />
+
+      {currentStory && (
+        <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#FFF4E8" }}>
+          <Text style={[styles.cardTitle, { color: darkTextColor }]}>⭐ आजची प्रमुख कथा</Text>
+          <Text style={[styles.storyName, { color: darkTextColor }]}>{currentStory.title}</Text>
+          <Text style={[styles.storyEra, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{currentStory.era}</Text>
+          <Text style={[styles.storyParagraph, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{currentStory.summary}</Text>
+
+          <View style={[styles.storyMoralBox, isDarkMode && { backgroundColor: "#000000", borderColor: "#FFFFFF" }]}>
+            <Text style={[styles.storyMoralLabel, { color: darkTextColor }]}>बोध:</Text>
+            <Text style={[styles.storyMoralText, { color: darkTextColor }]}>{currentStory.moral}</Text>
+          </View>
+
+          <Text style={[styles.storyPractice, { color: darkTextColor }]}>🧘 आजचा संस्कार उपक्रम: {currentStory.practice}</Text>
+        </SectionCard>
+      )}
+
+      <SectionCard style={darkSectionStyle}>
+        <Text style={[styles.cardTitle, { color: darkTextColor }]}>🪔 निवडक गर्भकथा</Text>
+        {stories.map((story) => (
+          <View key={story.id} style={[styles.storyListItem, isDarkMode && { borderBottomColor: "#333" }]}>
+            <Text style={[styles.storyListTitle, { color: darkTextColor }]}>{story.title}</Text>
+            <Text style={[styles.storyListSummary, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>{story.summary}</Text>
+          </View>
+        ))}
+      </SectionCard>
+
+      <SectionCard style={isDarkMode ? darkSectionStyle : { backgroundColor: "#EEF4FF" }}>
+        <Text style={[styles.cardTitle, { color: darkTextColor }]}>🔗 संदर्भ</Text>
+        <Text style={[styles.storyRefText, { color: isDarkMode ? "#FFFFFF" : colors.textSecondary }]}>विषय प्रेरणा: {data?.referenceUrl}</Text>
+      </SectionCard>
+    </View>
+  );
+}
+
 // ─── Garbh Sanskar Tab ───────────────────────────────────────────────
 function GarbhSanskarTab({ data, tri, colors, isDarkMode }) {
   const routineItems = [
@@ -565,6 +612,28 @@ const styles = StyleSheet.create({
   poseSteps: { fontSize: FONTS.small, color: COLORS.textSecondary, lineHeight: 20 },
   nutrientText: { fontSize: FONTS.h4, fontWeight: "700", color: "#388E3C", textAlign: "center" },
   gamesFocusText: { fontSize: FONTS.body, color: "#315A95", lineHeight: 22 },
+  storyName: { fontSize: FONTS.h4, fontWeight: "800", marginBottom: 4 },
+  storyEra: { fontSize: FONTS.small, fontWeight: "600", marginBottom: SPACING.sm },
+  storyParagraph: { fontSize: FONTS.body, lineHeight: 22, marginBottom: SPACING.sm },
+  storyMoralBox: {
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm,
+    borderWidth: 1,
+    borderColor: "rgba(122,79,42,0.2)",
+    backgroundColor: "rgba(122,79,42,0.08)",
+    marginBottom: SPACING.sm,
+  },
+  storyMoralLabel: { fontSize: FONTS.small, fontWeight: "800", marginBottom: 4 },
+  storyMoralText: { fontSize: FONTS.body, lineHeight: 21 },
+  storyPractice: { fontSize: FONTS.small, lineHeight: 21, fontWeight: "700" },
+  storyListItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.sm,
+  },
+  storyListTitle: { fontSize: FONTS.body, fontWeight: "700", marginBottom: 4 },
+  storyListSummary: { fontSize: FONTS.small, lineHeight: 20 },
+  storyRefText: { fontSize: FONTS.small, lineHeight: 21 },
   gameCard: { borderColor: "#DDE8FB" },
   gameHeader: {
     flexDirection: "row",
