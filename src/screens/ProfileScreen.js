@@ -7,7 +7,7 @@ import AppDatePicker from "../components/AppDatePicker";
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, TRIMESTER_INFO } from "../constants/theme";
 import { SectionCard, InfoRow } from "../components/UIComponents";
 
-export default function ProfileScreen({ profile, onUpdateProfile, savedNames, colors = COLORS }) {
+export default function ProfileScreen({ profile, onUpdateProfile, savedNames, colors = COLORS, onSignOut }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const currentWeek = profile?.currentWeek || 1;
   const trimester = currentWeek <= 13 ? 1 : currentWeek <= 27 ? 2 : 3;
@@ -141,6 +141,15 @@ export default function ProfileScreen({ profile, onUpdateProfile, savedNames, co
             ⚕️ वैद्यकीय अस्वीकरण: हा अॅप वैद्यकीय सल्ल्याचा पर्याय नाही.
           </Text>
         </View>
+
+        {!!onSignOut && (
+          <TouchableOpacity
+            style={[styles.signOutBtn, { borderColor: colors.borderLight, backgroundColor: colors.bgCard }]}
+            onPress={onSignOut}
+          >
+            <Text style={[styles.signOutBtnText, { color: colors.textPrimary }]}>Google मधून Sign Out</Text>
+          </TouchableOpacity>
+        )}
       </SectionCard>
 
       <View style={{ height: 100 }} />
@@ -222,4 +231,15 @@ const styles = StyleSheet.create({
     borderColor: "rgba(230, 81, 0, 0.2)",
   },
   disclaimerText: { fontSize: FONTS.small, color: "#E65100", lineHeight: 21, fontWeight: "600" },
+  signOutBtn: {
+    marginTop: SPACING.md,
+    borderWidth: 1,
+    borderRadius: RADIUS.full,
+    paddingVertical: SPACING.sm,
+    alignItems: "center",
+  },
+  signOutBtnText: {
+    fontSize: FONTS.small,
+    fontWeight: "800",
+  },
 });

@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, getColors, COLORS_DARK } from "./src/constants/theme";
 import { setUIColors } from "./src/components/UIComponents";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
+import LoginScreen from "./src/screens/LoginScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import WeeksScreen from "./src/screens/WeeksScreen";
 import WeekDetailScreen from "./src/screens/WeekDetailScreen";
@@ -14,11 +15,19 @@ import NamesScreen from "./src/screens/NamesScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import VercelAnalytics from "./src/components/VercelAnalytics";
 import { getDailyGeetaShlok } from "./src/services/claudeApi";
+import {
+  isFirebaseConfigured,
+  observeAuth,
+  signInWithGoogle,
+  loadUserCloud,
+  saveUserCloud,
+  tryCompleteRedirectSignIn,
+  signOutUser,
+} from "./src/services/authCloud";
 
-const STORAGE_KEY = "garbh_user_profile";
-const SAVED_NAMES_KEY = "garbh_saved_names";
 const DARK_MODE_KEY = "garbh_dark_mode";
 const IS_WEB = Platform.OS === "web";
+const ONBOARDING_RELEASE_VERSION = 2;
 
 const NAV_TABS = [
   { id: "home", emoji: "🏠", label: "मुख्यपान", hint: "आजचा प्रवास" },
@@ -29,64 +38,134 @@ const NAV_TABS = [
 
 export default function App() {
   const { width } = useWindowDimensions();
+  const [authUser, setAuthUser] = useState(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
   const [navigationStack, setNavigationStack] = useState([]);
   const [savedNames, setSavedNames] = useState([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [needsReOnboarding, setNeedsReOnboarding] = useState(false);
 
   const currentColors = isDarkMode ? COLORS_DARK : COLORS;
   const isMobileWeb = IS_WEB && width < 900;
   setUIColors(currentColors);
 
   useEffect(() => {
-    loadData();
+    loadUiPrefs();
   }, []);
 
-  async function loadData() {
-    try {
-      const [profileData, namesData, darkModeData] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY),
-        AsyncStorage.getItem(SAVED_NAMES_KEY),
-        AsyncStorage.getItem(DARK_MODE_KEY),
-      ]);
-      if (profileData) {
-        const parsedProfile = JSON.parse(profileData);
-        if (parsedProfile.lmpDate) {
-          const diffMs = new Date() - new Date(parsedProfile.lmpDate);
-          parsedProfile.currentWeek = Math.max(
-            1,
-            Math.min(40, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7)) + 1)
-          );
-        }
-        setProfile(parsedProfile);
+  useEffect(() => {
+    let mounted = true;
+    let unsubscribe = () => {};
+
+    async function setupAuth() {
+      if (!isFirebaseConfigured()) {
+        setLoginError("Firebase config missing. Add EXPO_PUBLIC_FIREBASE_* keys in .env");
+        setIsAuthReady(true);
+        setIsLoading(false);
+        return;
       }
-      if (namesData) setSavedNames(JSON.parse(namesData));
+
+      await tryCompleteRedirectSignIn();
+
+      unsubscribe = observeAuth(async (user) => {
+        if (!mounted) return;
+
+        setAuthUser(user);
+
+        if (!user) {
+          setProfile(null);
+          setSavedNames([]);
+          setNeedsReOnboarding(false);
+          setNavigationStack([]);
+          setIsAuthReady(true);
+          setIsLoading(false);
+          return;
+        }
+
+        try {
+          const cloud = await loadUserCloud(user.uid);
+          const cloudProfile = cloud?.profile || null;
+          const onboardingVersion = cloud?.onboardingVersion || cloudProfile?.onboardingVersion || 0;
+          const mustOnboard = !cloudProfile || onboardingVersion < ONBOARDING_RELEASE_VERSION;
+
+          setSavedNames(Array.isArray(cloud?.savedNames) ? cloud.savedNames : []);
+
+          if (mustOnboard) {
+            setProfile(null);
+            setNeedsReOnboarding(true);
+          } else {
+            const parsedProfile = { ...cloudProfile };
+            if (parsedProfile.lmpDate) {
+              const diffMs = new Date() - new Date(parsedProfile.lmpDate);
+              parsedProfile.currentWeek = Math.max(
+                1,
+                Math.min(40, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7)) + 1)
+              );
+            }
+            setProfile(parsedProfile);
+            setNeedsReOnboarding(false);
+          }
+        } catch (e) {
+          console.error("Cloud load error", e);
+          setProfile(null);
+          setSavedNames([]);
+          setNeedsReOnboarding(true);
+        } finally {
+          setIsAuthReady(true);
+          setIsLoading(false);
+        }
+      });
+    }
+
+    setupAuth();
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  async function loadUiPrefs() {
+    try {
+      const darkModeData = await AsyncStorage.getItem(DARK_MODE_KEY);
       if (darkModeData) setIsDarkMode(JSON.parse(darkModeData));
     } catch (e) {
       console.error("Load error", e);
-    } finally {
-      setIsLoading(false);
     }
   }
 
   async function saveProfile(newProfile) {
+    if (!authUser?.uid) return;
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newProfile));
-      setProfile(newProfile);
+      const profileToSave = {
+        ...newProfile,
+        onboardingVersion: ONBOARDING_RELEASE_VERSION,
+      };
+      await saveUserCloud(authUser.uid, {
+        profile: profileToSave,
+        savedNames,
+        onboardingVersion: ONBOARDING_RELEASE_VERSION,
+      });
+      setProfile(profileToSave);
+      setNeedsReOnboarding(false);
     } catch (e) {
       console.error("Save error", e);
     }
   }
 
   async function toggleSaveName(nameObj) {
+    if (!authUser?.uid) return;
     try {
       const exists = savedNames.find((item) => item.name === nameObj.name);
       const updated = exists
         ? savedNames.filter((item) => item.name !== nameObj.name)
         : [...savedNames, nameObj];
-      await AsyncStorage.setItem(SAVED_NAMES_KEY, JSON.stringify(updated));
+      await saveUserCloud(authUser.uid, { savedNames: updated });
       setSavedNames(updated);
     } catch (e) {
       console.error("Save name error", e);
@@ -104,6 +183,31 @@ export default function App() {
       await AsyncStorage.setItem(DARK_MODE_KEY, JSON.stringify(newDarkMode));
     } catch (e) {
       console.error("Dark mode toggle error", e);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setLoginError("");
+    setIsLoggingIn(true);
+    try {
+      await signInWithGoogle();
+    } catch (e) {
+      setLoginError(e?.message || "Google sign-in failed");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOutUser();
+      setProfile(null);
+      setSavedNames([]);
+      setNavigationStack([]);
+      setActiveTab("home");
+      setNeedsReOnboarding(false);
+    } catch (e) {
+      console.error("Sign out error", e);
     }
   }
 
@@ -163,6 +267,7 @@ export default function App() {
         onUpdateProfile={saveProfile}
         savedNames={savedNames}
         colors={currentColors}
+        onSignOut={handleSignOut}
       />
     );
   }
@@ -182,7 +287,7 @@ export default function App() {
     return null;
   }
 
-  if (isLoading) {
+  if (isLoading || !isAuthReady) {
     return (
       <View style={styles.splashScreen}>
         <Text style={styles.splashEmoji}>🕉️</Text>
@@ -192,7 +297,22 @@ export default function App() {
     );
   }
 
-  if (!profile) {
+  if (!authUser) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: currentColors.bg }]}> 
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={currentColors.bg} />
+        <LoginScreen
+          onGoogleSignIn={handleGoogleLogin}
+          isBusy={isLoggingIn}
+          errorText={loginError}
+          colors={currentColors}
+        />
+        <VercelAnalytics />
+      </SafeAreaView>
+    );
+  }
+
+  if (!profile || needsReOnboarding) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
