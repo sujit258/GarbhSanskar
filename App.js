@@ -17,6 +17,7 @@ import VercelAnalytics from "./src/components/VercelAnalytics";
 import { getDailyGeetaShlok } from "./src/services/claudeApi";
 import {
   isFirebaseConfigured,
+  getMissingFirebaseConfigKeys,
   observeAuth,
   signInWithGoogle,
   loadUserCloud,
@@ -28,6 +29,8 @@ import {
 const DARK_MODE_KEY = "garbh_dark_mode";
 const IS_WEB = Platform.OS === "web";
 const ONBOARDING_RELEASE_VERSION = 2;
+const getProfileCacheKey = (uid) => `garbh_profile_${uid}`;
+const getNamesCacheKey = (uid) => `garbh_names_${uid}`;
 
 const NAV_TABS = [
   { id: "home", emoji: "🏠", label: "मुख्यपान", hint: "आजचा प्रवास" },
@@ -64,13 +67,12 @@ export default function App() {
 
     async function setupAuth() {
       if (!isFirebaseConfigured()) {
-        setLoginError("Firebase config missing. Add EXPO_PUBLIC_FIREBASE_* keys in .env");
+        const missingKeys = getMissingFirebaseConfigKeys();
+        setLoginError(`Firebase config missing: ${missingKeys.join(", ")}. Add these keys in .env and Vercel env.`);
         setIsAuthReady(true);
         setIsLoading(false);
         return;
       }
-
-      await tryCompleteRedirectSignIn();
 
       unsubscribe = observeAuth(async (user) => {
         if (!mounted) return;
@@ -87,7 +89,41 @@ export default function App() {
           return;
         }
 
+        let hasUsableCachedProfile = false;
         try {
+          const [cachedProfileRaw, cachedNamesRaw] = await Promise.all([
+            AsyncStorage.getItem(getProfileCacheKey(user.uid)),
+            AsyncStorage.getItem(getNamesCacheKey(user.uid)),
+          ]);
+
+          if (cachedNamesRaw) {
+            const parsedNames = JSON.parse(cachedNamesRaw);
+            if (Array.isArray(parsedNames)) {
+              setSavedNames(parsedNames);
+            }
+          }
+
+          if (cachedProfileRaw) {
+            const cachedProfile = JSON.parse(cachedProfileRaw);
+            const cachedVersion = cachedProfile?.onboardingVersion || 0;
+            const parsedCachedProfile = { ...cachedProfile };
+            if (parsedCachedProfile?.lmpDate) {
+              const diffMs = new Date() - new Date(parsedCachedProfile.lmpDate);
+              parsedCachedProfile.currentWeek = Math.max(
+                1,
+                Math.min(40, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7)) + 1)
+              );
+            }
+
+            if (cachedVersion >= ONBOARDING_RELEASE_VERSION) {
+              setProfile(parsedCachedProfile);
+              setNeedsReOnboarding(false);
+              setIsAuthReady(true);
+              setIsLoading(false);
+              hasUsableCachedProfile = true;
+            }
+          }
+
           const cloud = await loadUserCloud(user.uid);
           const cloudProfile = cloud?.profile || null;
           const onboardingVersion = cloud?.onboardingVersion || cloudProfile?.onboardingVersion || 0;
@@ -109,17 +145,25 @@ export default function App() {
             }
             setProfile(parsedProfile);
             setNeedsReOnboarding(false);
+            await Promise.all([
+              AsyncStorage.setItem(getProfileCacheKey(user.uid), JSON.stringify(parsedProfile)),
+              AsyncStorage.setItem(getNamesCacheKey(user.uid), JSON.stringify(Array.isArray(cloud?.savedNames) ? cloud.savedNames : [])),
+            ]);
           }
         } catch (e) {
           console.error("Cloud load error", e);
-          setProfile(null);
-          setSavedNames([]);
-          setNeedsReOnboarding(true);
+          if (!hasUsableCachedProfile) {
+            setProfile(null);
+            setSavedNames([]);
+            setNeedsReOnboarding(true);
+          }
         } finally {
           setIsAuthReady(true);
           setIsLoading(false);
         }
       });
+
+      tryCompleteRedirectSignIn();
     }
 
     setupAuth();
@@ -146,13 +190,21 @@ export default function App() {
         ...newProfile,
         onboardingVersion: ONBOARDING_RELEASE_VERSION,
       };
-      await saveUserCloud(authUser.uid, {
+      setProfile(profileToSave);
+      setNeedsReOnboarding(false);
+
+      await Promise.all([
+        AsyncStorage.setItem(getProfileCacheKey(authUser.uid), JSON.stringify(profileToSave)),
+        AsyncStorage.setItem(getNamesCacheKey(authUser.uid), JSON.stringify(savedNames)),
+      ]);
+
+      saveUserCloud(authUser.uid, {
         profile: profileToSave,
         savedNames,
         onboardingVersion: ONBOARDING_RELEASE_VERSION,
+      }).catch((error) => {
+        console.error("Cloud save profile error", error);
       });
-      setProfile(profileToSave);
-      setNeedsReOnboarding(false);
     } catch (e) {
       console.error("Save error", e);
     }
@@ -165,8 +217,11 @@ export default function App() {
       const updated = exists
         ? savedNames.filter((item) => item.name !== nameObj.name)
         : [...savedNames, nameObj];
-      await saveUserCloud(authUser.uid, { savedNames: updated });
       setSavedNames(updated);
+      await AsyncStorage.setItem(getNamesCacheKey(authUser.uid), JSON.stringify(updated));
+      saveUserCloud(authUser.uid, { savedNames: updated }).catch((error) => {
+        console.error("Cloud save name error", error);
+      });
     } catch (e) {
       console.error("Save name error", e);
     }
@@ -327,7 +382,8 @@ export default function App() {
               <View style={styles.webOnboardingList}>
                 <Text style={styles.webOnboardingListItem}>• आठवड्यानुसार मार्गदर्शन</Text>
                 <Text style={styles.webOnboardingListItem}>• नावे, संस्कार, योग, पोषण</Text>
-                <Text style={styles.webOnboardingListItem}>• पुढे लॉगिन आणि क्लाउड डेटा साठवण</Text>
+                <Text style={styles.webOnboardingListItem}>• दैनिक गीता श्लोक आणि गर्भ गीता संदर्भ</Text>
+                <Text style={styles.webOnboardingListItem}>• Google साइन-इन आणि क्लाउड डेटा सिंक</Text>
               </View>
             </View>
             <View style={styles.webOnboardingCard}>

@@ -60,7 +60,7 @@ export default function OnboardingScreen({ onComplete }) {
             तुमच्यासाठी दररोज काळजी, बाळासाठी दररोज प्रेम.
           </Text>
           <Text style={styles.welcomeText}>
-            साप्ताहिक प्रगती, पोषण, योग, गर्भसंस्कार कथा आणि नाव सुचवणी — सगळे एकाच ठिकाणी.
+            साप्ताहिक प्रगती, पोषण, योग, गर्भसंस्कार कथा, दैनिक गीता श्लोक, गर्भ गीता संदर्भ आणि नाव सुचवणी — सर्व डिव्हाइसमध्ये क्लाउड डेटा साठवणीने सुरक्षित.
           </Text>
 
           <View style={styles.featureGrid}>
@@ -71,6 +71,10 @@ export default function OnboardingScreen({ onComplete }) {
               ["🕉️", "गर्भसंस्कार", "#FFF3E0"],
               ["💬", "दैनंदिन संवाद", "#E8F0FF"],
               ["👶", "नाव सुचवणी", "#FCE4EC"],
+              ["📖", "गीता श्लोक", "#FFE4E1"],
+              ["📚", "गर्भ गीता संदर्भ", "#E0FFFF"],
+              ["☁️", "क्लाउड डेटा सिंक", "#F0E68C"],
+              ["🔐", "Google साइन-इन", "#E6F3FF"],
             ].map(([emoji, label, color]) => (
               <View key={label} style={[styles.featureCard, { backgroundColor: color }]}>
                 <Text style={styles.featureEmoji}>{emoji}</Text>
