@@ -157,6 +157,110 @@ function safeParseJSON(text) {
   }
 }
 
+// ─── Week-specific fallback data ──────────────────────────────────────────────
+const WEEK_SPECIFIC_DATA = {
+  babyDevelopment: {
+    "1-4": { size: "दाणाएवढा", weight: "मिलीग्राम", emoji: "🌱", milestones: ["भ्रूण विकास सुरू", "हृदय धडधडणे शुरू", "मेंदूचा विकास"] },
+    "5-8": { size: "सेमीपासून अधिक लांब", weight: "१-१०g", emoji: "🫘", milestones: ["हाताचे बोटे दिसू लागली", "चेहरा तयार होणे सुरू", "पेशीचा विकास"] },
+    "9-13": { size: "कर्पूरएवढा", weight: "२०-२६g", emoji: "🍒", milestones: ["अंगूठ चुंबन करू शकते", "कान सुनू लागले", "लिंग निश्चित होणे"] },
+    "14-18": { size: "सिलिंडर मूंगफळी", weight: "१००-१५०g", emoji: "🥒", milestones: ["बाळ हलणे दिसू लागते", "त्वचा निर्मिती", "हाड कठीण होऊ लागली"] },
+    "19-23": { size: "संपूर्ण केळी", weight: "२००-३००g", emoji: "🍌", milestones: ["सुगंध ग्रहण शक्ती विकसित", "लोह साठा तयार", "त्वचा लाल-गुलाबी"] },
+    "24-27": { size: "संतरा", weight: "४००-६००g", emoji: "🍆", milestones: ["फुफ्फुस काम करणे सुरू", "नजर थोडी खुली", "अधिक हालचाली शुरू"] },
+    "28-32": { size: "मोठी कॅबेज", weight: "१०००-१६००g", emoji: "🥬", milestones: ["पंज्याने पकड करणे शुरू", "नखे बाहेर आले", "अधिक वजन वाढणे"] },
+    "33-36": { size: "रोमन लेट्यूस", weight: "१८००-२१००g", emoji: "🥗", milestones: ["वजन वेगात वाढ", "फुफ्फुसे परिपक्व", "हाड मजबूत होणे"] },
+    "37-40": { size: "वाटरमेलन", weight: "२४००-३५००g", emoji: "🍉", milestones: ["प्रसूतीसाठी तयार", "सर्व अवयव पूर्ण विकसित", "जन्मासाठी अवस्थान बदलणे"] },
+  },
+  nutrition: {
+    "1-4": { keyNutrient: "फोलिक अँसिड", eat: ["पालक", "मोठे अनाज", "संत्र"], avoid: ["कच्चे अंडे", "कच्चा मांस"] },
+    "5-8": { keyNutrient: "प्रोटीन", eat: ["दाळ", "दही", "नारळ"], avoid: ["कॅफीन", "तेल-मसालेदार"] },
+    "9-13": { keyNutrient: "कॅल्शियम", eat: ["दूध", "लोबिया", "तिल"], avoid: ["अचार", "उरद"] },
+    "14-18": { keyNutrient: "लोह", eat: ["मांस", "पालक", "तांदूळ"], avoid: ["चहा", "कॉफी"] },
+    "19-23": { keyNutrient: "जस्ता", eat: ["कद्दू बियाणे", "मूंगफळ", "गव्हार"], avoid: ["तीक्ष्ण अन्न", "साठी अन्न"] },
+    "24-27": { keyNutrient: "विटामिन डी", eat: ["दुध", "अंडे", "सूर्यप्रकाश"], avoid: ["कच्चा पपई", "कच्चा अन्न"] },
+    "28-32": { keyNutrient: "विटामिन सी", eat: ["आँवला", "निंबू", "टोमेटो"], avoid: ["तेल-मसालेदार", "जास्त मीठ"] },
+    "33-36": { keyNutrient: "विटामिन बी", eat: ["गहू", "सोयाबीन", "छोळे"], avoid: ["संरक्षित अन्न", "चॉकलेट"] },
+    "37-40": { keyNutrient: "संपूर्ण पोषण", eat: ["सर्व प्रकारचे अन्न संतुलित", "दुध उत्पादने", "ताजे फळ-भाजी"], avoid: ["भारी अन्न", "जास्त मीठ-साखर"] },
+  },
+  yoga: {
+    "1-4": { safetyNote: "सौम्य योग केवळ", poses: ["पद्मासन", "शवासन"], pranayama: "सामान्य श्वसन" },
+    "5-8": { safetyNote: "आरामदायक आसने", poses: ["वज्रासन", "मार्जरीआसन"], pranayama: "अनुलोम विलोम" },
+    "9-13": { safetyNote: "निरापद आसने चालू ठेवा", poses: ["उष्ट्रासन", "सीमासन"], pranayama: "चंद्र भेदी" },
+    "14-18": { safetyNote: "पऱ्यंत मजबूतीची सुरुवात", poses: ["कोट्यासन", "त्रिकोणासन"], pranayama: "उज्जायी" },
+    "19-23": { safetyNote: "संतुलित योग मनोबल", poses: ["वीरभद्रासन", "बादशहासन"], pranayama: "भस्त्रिका" },
+    "24-27": { safetyNote: "हल्की व्यायामे सुरू", poses: ["निर्माण आसने", "हलके कसरत"], pranayama: "नाडी शोधन" },
+    "28-32": { safetyNote: "तणाव कमी करणारे आसने", poses: ["तितळीसन", "पशचिमोत्तनासन"], pranayama: "विलोम" },
+    "33-36": { safetyNote: "सुलभ मनोरंजक आसने", poses: ["शांत आसने फक्त", "चेहऱ्याची व्यायामे"], pranayama: "योग निद्रा" },
+    "37-40": { safetyNote: "प्रसूतीपूर्व तयारी", poses: ["गर्भासन", "हिप स्ट्रेच"], pranayama: "जन्मासाठी श्वसन" },
+  },
+};
+
+function getWeekRangeKey(week) {
+  if (week <= 4) return "1-4";
+  if (week <= 8) return "5-8";
+  if (week <= 13) return "9-13";
+  if (week <= 18) return "14-18";
+  if (week <= 23) return "19-23";
+  if (week <= 27) return "24-27";
+  if (week <= 32) return "28-32";
+  if (week <= 36) return "33-36";
+  return "37-40";
+}
+
+function getWeekSpecificBabyDevelopmentFallback(week) {
+  const rangeKey = getWeekRangeKey(week);
+  const data = WEEK_SPECIFIC_DATA.babyDevelopment[rangeKey];
+  return {
+    title: `आठवडा ${week} - बाळाची वाढ`,
+    emoji: data.emoji,
+    size: data.size,
+    weight: data.weight,
+    length: `${week} आठवड्यांची लांबी`,
+    development: data.milestones,
+    milestone: `${week}वा आठवडा: ${data.milestones[0]}`,
+  };
+}
+
+function getWeekSpecificNutritionFallback(week) {
+  const rangeKey = getWeekRangeKey(week);
+  const data = WEEK_SPECIFIC_DATA.nutrition[rangeKey];
+  const eatList = data.eat.map((food, idx) => ({
+    food,
+    reason: idx === 0 ? data.keyNutrient : "पोषण प्रदान करते",
+    emoji: ["🥬", "🥛", "🍊"][idx % 3],
+  }));
+  const avoidList = data.avoid.map((food) => ({ food, reason: "पचनासाठी भारी" }));
+  return {
+    title: `पोषण - आठवडा ${week}`,
+    keyNutrient: data.keyNutrient,
+    eat: eatList,
+    avoid: avoidList,
+    recipe: {
+      name: `${data.eat[0]} आधारित रेसिपी`,
+      ingredients: data.eat,
+      method: "सर्व साहित्य एकत्र शिजवा आणि गरम खा",
+    },
+    hydration: "दिवसातून ८-१० ग्लास पाणी आणि द्रव अन्न घ्या",
+  };
+}
+
+function getWeekSpecificYogaFallback(week) {
+  const rangeKey = getWeekRangeKey(week);
+  const data = WEEK_SPECIFIC_DATA.yoga[rangeKey];
+  return {
+    title: `योग - आठवडा ${week}`,
+    safetyNote: data.safetyNote,
+    poses: data.poses.map((name) => ({
+      name,
+      sanskrit: name,
+      duration: "५-१० मिनिटे",
+      benefit: "शारीरिक आणि मानसिक आरोग्य",
+      steps: `${name} करत सवयची सुधारणा करा`,
+      emoji: "🧘",
+    })),
+    pranayama: { name: data.pranayama, benefit: "श्वसन नियंत्रण", duration: "५ मिनिटे" },
+  };
+}
+
 const FALLBACK_NAMES = [
   { name: "आरव", english: "Aarav", meaning: "शांत आणि ज्ञानी", origin: "संस्कृत", numerology: "3", famous: "", gender: "boy" },
   { name: "विहान", english: "Vihaan", meaning: "पहाट, नवीन सुरुवात", origin: "संस्कृत", numerology: "5", famous: "", gender: "boy" },
@@ -417,15 +521,7 @@ function getFallbackNames({ gender, letter, origin, nakshatra, rashi, min = 12, 
 // 1. Baby Development
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchBabyDevelopment(week) {
-  const fallback = {
-    title: `आठवडा ${week}`,
-    emoji: "🌱",
-    size: "वाटाणाएवढे",
-    weight: "थोडे",
-    length: "थोडी",
-    development: ["बाळ वाढत आहे", "अवयव तयार होत आहेत", "हृदय धडधडत आहे"],
-    milestone: "बाळाची वाढ सुरू आहे",
-  };
+  const fallback = getWeekSpecificBabyDevelopmentFallback(week);
 
   const prompt = `गर्भावस्थेच्या ${week}व्या आठवड्यात बाळाची वाढ कशी होते?
 Return ONLY this JSON:
@@ -479,14 +575,7 @@ Return ONLY this JSON:
 // 3. Yoga
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchYoga(week) {
-  const fallback = {
-    title: "योग",
-    safetyNote: "डॉक्टरांचा सल्ला घेऊनच योग करा",
-    poses: [
-      { name: "शवासन", sanskrit: "Shavasana", duration: "१० मिनिटे", benefit: "शांतता मिळते", steps: "पाठीवर झोपा आणि श्वास घ्या", emoji: "🧘" },
-    ],
-    pranayama: { name: "अनुलोम विलोम", benefit: "मन शांत होते", duration: "५ मिनिटे" },
-  };
+  const fallback = getWeekSpecificYogaFallback(week);
 
   const trimester = week <= 13 ? "पहिली" : week <= 27 ? "दुसरी" : "तिसरी";
   const prompt = `गर्भावस्थेच्या ${week}व्या आठवड्यात (${trimester} तिमाही) कोणते योगासने सुरक्षित आहेत?
@@ -523,14 +612,7 @@ Return ONLY this JSON:
 // 4. Nutrition
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchNutrition(week) {
-  const fallback = {
-    title: "पोषण",
-    keyNutrient: "फॉलिक अॅसिड",
-    eat: [{ food: "पालक", reason: "लोह मिळते", emoji: "🥬" }],
-    avoid: [{ food: "कच्चे मांस", reason: "संसर्गाचा धोका" }],
-    recipe: { name: "पालक खिचडी", ingredients: ["पालक", "तांदूळ", "मूग डाळ"], method: "सर्व एकत्र शिजवा" },
-    hydration: "दिवसातून ८-१० ग्लास पाणी प्या",
-  };
+  const fallback = getWeekSpecificNutritionFallback(week);
 
   const prompt = `गर्भावस्थेच्या ${week}व्या आठवड्यात आईने काय खावे?
 Return ONLY this JSON:
