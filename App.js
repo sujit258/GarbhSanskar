@@ -12,6 +12,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import WeeksScreen from "./src/screens/WeeksScreen";
 import WeekDetailScreen from "./src/screens/WeekDetailScreen";
 import NamesScreen from "./src/screens/NamesScreen";
+import CareHubScreen from "./src/screens/CareHubScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import VercelAnalytics from "./src/components/VercelAnalytics";
 import { getDailyGeetaShlok } from "./src/services/claudeApi";
@@ -24,6 +25,7 @@ import {
   saveUserCloud,
   tryCompleteRedirectSignIn,
   signOutUser,
+  getReadableAuthError,
 } from "./src/services/authCloud";
 
 const DARK_MODE_KEY = "garbh_dark_mode";
@@ -31,11 +33,32 @@ const IS_WEB = Platform.OS === "web";
 const ONBOARDING_RELEASE_VERSION = 2;
 const getProfileCacheKey = (uid) => `garbh_profile_${uid}`;
 const getNamesCacheKey = (uid) => `garbh_names_${uid}`;
+const getCareCacheKey = (uid) => `garbh_care_${uid}`;
+
+function getDefaultCareData() {
+  return {
+    reminders: [
+      { id: "r1", title: "फॉलिक अॅसिड घ्या", time: "सकाळी ८:००", enabled: true },
+      { id: "r2", title: "पाणी प्या", time: "दुपारी १२:००", enabled: true },
+      { id: "r3", title: "१० मिनिटे चालणे", time: "सायंकाळी ६:००", enabled: true },
+    ],
+    moodLogs: [],
+    hospitalBag: {
+      "ओळखपत्रे व कागदपत्रे": false,
+      "आरामदायी कपडे": false,
+      "बाळाचे कपडे": false,
+      "स्वच्छता साहित्य": false,
+      "डॉक्टरांचे अहवाल": false,
+      "मोबाइल चार्जर": false,
+    },
+  };
+}
 
 const NAV_TABS = [
   { id: "home", emoji: "🏠", label: "मुख्यपान", hint: "आजचा प्रवास" },
   { id: "weeks", emoji: "📅", label: "आठवडे", hint: "संपूर्ण टाइमलाइन" },
   { id: "names", emoji: "👶", label: "नावे", hint: "नाव सुचवणी" },
+  { id: "care", emoji: "🩺", label: "सहाय्य", hint: "दैनिक मदत" },
   { id: "profile", emoji: "👩", label: "प्रोफाइल", hint: "तुमची माहिती" },
 ];
 
@@ -50,6 +73,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [navigationStack, setNavigationStack] = useState([]);
   const [savedNames, setSavedNames] = useState([]);
+  const [careData, setCareData] = useState(getDefaultCareData());
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [needsReOnboarding, setNeedsReOnboarding] = useState(false);
 
@@ -82,6 +106,7 @@ export default function App() {
         if (!user) {
           setProfile(null);
           setSavedNames([]);
+          setCareData(getDefaultCareData());
           setNeedsReOnboarding(false);
           setNavigationStack([]);
           setIsAuthReady(true);
@@ -91,15 +116,23 @@ export default function App() {
 
         let hasUsableCachedProfile = false;
         try {
-          const [cachedProfileRaw, cachedNamesRaw] = await Promise.all([
+          const [cachedProfileRaw, cachedNamesRaw, cachedCareRaw] = await Promise.all([
             AsyncStorage.getItem(getProfileCacheKey(user.uid)),
             AsyncStorage.getItem(getNamesCacheKey(user.uid)),
+            AsyncStorage.getItem(getCareCacheKey(user.uid)),
           ]);
 
           if (cachedNamesRaw) {
             const parsedNames = JSON.parse(cachedNamesRaw);
             if (Array.isArray(parsedNames)) {
               setSavedNames(parsedNames);
+            }
+          }
+
+          if (cachedCareRaw) {
+            const parsedCare = JSON.parse(cachedCareRaw);
+            if (parsedCare && typeof parsedCare === "object") {
+              setCareData({ ...getDefaultCareData(), ...parsedCare });
             }
           }
 
@@ -130,6 +163,7 @@ export default function App() {
           const mustOnboard = !cloudProfile || onboardingVersion < ONBOARDING_RELEASE_VERSION;
 
           setSavedNames(Array.isArray(cloud?.savedNames) ? cloud.savedNames : []);
+          setCareData(cloud?.careData ? { ...getDefaultCareData(), ...cloud.careData } : getDefaultCareData());
 
           if (mustOnboard) {
             setProfile(null);
@@ -148,6 +182,7 @@ export default function App() {
             await Promise.all([
               AsyncStorage.setItem(getProfileCacheKey(user.uid), JSON.stringify(parsedProfile)),
               AsyncStorage.setItem(getNamesCacheKey(user.uid), JSON.stringify(Array.isArray(cloud?.savedNames) ? cloud.savedNames : [])),
+              AsyncStorage.setItem(getCareCacheKey(user.uid), JSON.stringify(cloud?.careData ? { ...getDefaultCareData(), ...cloud.careData } : getDefaultCareData())),
             ]);
           }
         } catch (e) {
@@ -163,7 +198,10 @@ export default function App() {
         }
       });
 
-      tryCompleteRedirectSignIn();
+      tryCompleteRedirectSignIn().catch((error) => {
+        if (!mounted) return;
+        setLoginError(getReadableAuthError(error));
+      });
     }
 
     setupAuth();
@@ -196,11 +234,13 @@ export default function App() {
       await Promise.all([
         AsyncStorage.setItem(getProfileCacheKey(authUser.uid), JSON.stringify(profileToSave)),
         AsyncStorage.setItem(getNamesCacheKey(authUser.uid), JSON.stringify(savedNames)),
+        AsyncStorage.setItem(getCareCacheKey(authUser.uid), JSON.stringify(careData)),
       ]);
 
       saveUserCloud(authUser.uid, {
         profile: profileToSave,
         savedNames,
+        careData,
         onboardingVersion: ONBOARDING_RELEASE_VERSION,
       }).catch((error) => {
         console.error("Cloud save profile error", error);
@@ -227,6 +267,20 @@ export default function App() {
     }
   }
 
+  async function saveCareData(nextCareData) {
+    if (!authUser?.uid) return;
+    const merged = { ...getDefaultCareData(), ...nextCareData };
+    setCareData(merged);
+    try {
+      await AsyncStorage.setItem(getCareCacheKey(authUser.uid), JSON.stringify(merged));
+      saveUserCloud(authUser.uid, { careData: merged }).catch((error) => {
+        console.error("Cloud save care data error", error);
+      });
+    } catch (error) {
+      console.error("Save care data error", error);
+    }
+  }
+
   function isNameSaved(name) {
     return savedNames.some((item) => item.name === name);
   }
@@ -247,7 +301,7 @@ export default function App() {
     try {
       await signInWithGoogle();
     } catch (e) {
-      setLoginError(e?.message || "Google sign-in failed");
+      setLoginError(getReadableAuthError(e));
     } finally {
       setIsLoggingIn(false);
     }
@@ -258,6 +312,7 @@ export default function App() {
       await signOutUser();
       setProfile(null);
       setSavedNames([]);
+      setCareData(getDefaultCareData());
       setNavigationStack([]);
       setActiveTab("home");
       setNeedsReOnboarding(false);
@@ -311,6 +366,18 @@ export default function App() {
           toggleSaveName={toggleSaveName}
           isNameSaved={isNameSaved}
           babyGender={profile.babyGender}
+          colors={currentColors}
+        />
+      );
+    }
+
+    if (activeTab === "care") {
+      return (
+        <CareHubScreen
+          profile={profile}
+          careData={careData}
+          onSaveCareData={saveCareData}
+          onUpdateProfile={saveProfile}
           colors={currentColors}
         />
       );

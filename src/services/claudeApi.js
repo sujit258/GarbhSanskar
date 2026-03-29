@@ -3,6 +3,7 @@
 // Set keys in .env (see .env.example):
 // EXPO_PUBLIC_GEMINI_API_KEY=...
 // EXPO_PUBLIC_OPENAI_API_KEY=...
+// EXPO_PUBLIC_GROK_API_KEY=...
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "";
@@ -12,6 +13,8 @@ const GEMINI_MODELS = [
 ];
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || "";
 const OPENAI_MODEL = "gpt-4o-mini";
+const GROK_API_KEY = process.env.EXPO_PUBLIC_GROK_API_KEY || "";
+const GROK_MODEL = "grok-2";
 
 function getGeminiUrl(model) {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
@@ -126,6 +129,40 @@ async function callOpenAI(systemPrompt, userPrompt) {
   return text;
 }
 
+async function callGrok(systemPrompt, userPrompt) {
+  if (!GROK_API_KEY) {
+    throw new Error("Grok API key missing");
+  }
+
+  const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${GROK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: GROK_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 1000,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const grokError = data?.error?.message || "Grok API Error";
+    throw new Error(grokError);
+  }
+
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("Empty response from Grok");
+  return text;
+}
+
 async function callAI(systemPrompt, userPrompt) {
   try {
     return await callGemini(systemPrompt, userPrompt);
@@ -133,7 +170,15 @@ async function callAI(systemPrompt, userPrompt) {
     if (!isQuotaOrRateLimitError(geminiError?.message)) {
       throw geminiError;
     }
-    return callOpenAI(systemPrompt, userPrompt);
+    try {
+      return await callOpenAI(systemPrompt, userPrompt);
+    } catch (openaiError) {
+      try {
+        return await callGrok(systemPrompt, userPrompt);
+      } catch (grokError) {
+        throw grokError;
+      }
+    }
   }
 }
 
@@ -160,15 +205,15 @@ function safeParseJSON(text) {
 // ─── Week-specific fallback data ──────────────────────────────────────────────
 const WEEK_SPECIFIC_DATA = {
   babyDevelopment: {
-    "1-4": { size: "दाणाएवढा", weight: "मिलीग्राम", emoji: "🌱", milestones: ["भ्रूण विकास सुरू", "हृदय धडधडणे शुरू", "मेंदूचा विकास"] },
-    "5-8": { size: "सेमीपासून अधिक लांब", weight: "१-१०g", emoji: "🫘", milestones: ["हाताचे बोटे दिसू लागली", "चेहरा तयार होणे सुरू", "पेशीचा विकास"] },
-    "9-13": { size: "कर्पूरएवढा", weight: "२०-२६g", emoji: "🍒", milestones: ["अंगूठ चुंबन करू शकते", "कान सुनू लागले", "लिंग निश्चित होणे"] },
-    "14-18": { size: "सिलिंडर मूंगफळी", weight: "१००-१५०g", emoji: "🥒", milestones: ["बाळ हलणे दिसू लागते", "त्वचा निर्मिती", "हाड कठीण होऊ लागली"] },
-    "19-23": { size: "संपूर्ण केळी", weight: "२००-३००g", emoji: "🍌", milestones: ["सुगंध ग्रहण शक्ती विकसित", "लोह साठा तयार", "त्वचा लाल-गुलाबी"] },
-    "24-27": { size: "संतरा", weight: "४००-६००g", emoji: "🍆", milestones: ["फुफ्फुस काम करणे सुरू", "नजर थोडी खुली", "अधिक हालचाली शुरू"] },
-    "28-32": { size: "मोठी कॅबेज", weight: "१०००-१६००g", emoji: "🥬", milestones: ["पंज्याने पकड करणे शुरू", "नखे बाहेर आले", "अधिक वजन वाढणे"] },
-    "33-36": { size: "रोमन लेट्यूस", weight: "१८००-२१००g", emoji: "🥗", milestones: ["वजन वेगात वाढ", "फुफ्फुसे परिपक्व", "हाड मजबूत होणे"] },
-    "37-40": { size: "वाटरमेलन", weight: "२४००-३५००g", emoji: "🍉", milestones: ["प्रसूतीसाठी तयार", "सर्व अवयव पूर्ण विकसित", "जन्मासाठी अवस्थान बदलणे"] },
+    "1-4": { size: "दाणाएवढा (१-३ मिमी)", weight: "< १ मिग्रॅ", emoji: "🌱", milestones: ["भ्रूण विकास तीव्र गतीने", "हृदय धडधडणे शुरू", "मेंदूचा विकास", "डीएनए ने प्रोग्रामिंग सुरू"] },
+    "5-8": { size: "१-२ सेंटीमीटर", weight: "१-५ ग्रॅम", emoji: "🫘", milestones: ["हाताचे बोटे दिसू लागली", "चेहऱ्याच्या विशेषता दिसू लागतात", "पेशींचा विकास", "अंग तयार होणे सुरू"] },
+    "9-13": { size: "कर्पूरएवढा (७-८ सेंटीमीटर)", weight: "२०-३० ग्रॅम", emoji: "🍒", milestones: ["अंगूठ चुंबन करू शकते", "कान सुनू लागले (हलकी आवाज)", "बेबी लिंग निश्चित", "नख बनणे सुरू"] },
+    "14-18": { size: "काजू साइज (१२-१५ सेंटीमीटर)", weight: "१००-१६० ग्रॅम", emoji: "🥒", milestones: ["आई बाळचा हालचाल अनुभव करिन्न लागते", "त्वचा बनणे प्रारंभ", "हाडे कठीण होऊ लागली", "शरीरातील सिस्टीम काम करू लागली"] },
+    "19-23": { size: "पूर्ण केळी (१८-२० सेंटीमीटर)", weight: "२५०-४०० ग्रॅम", emoji: "🍌", milestones: ["सुगंध आणि स्वाद शक्ती विकसित", "लोह संग्रह तयार होणे", "त्वचा गुलाबी रंगात आणि मजबूत", "टाळू पूर्णपणे विकसित"] },
+    "24-27": { size: "संतरा (२१-२५ सेंटीमीटर)", weight: "४००-७०० ग्रॅम", emoji: "🍆", milestones: ["फुफ्फुस काम करणे सुरू (साचा क्रिया)", "नजर खुली होणे लागते", "हालचाली अधिक सक्रिय", "सर्फॅक्टेंट ग्रंथी काम करणे सुरू"] },
+    "28-32": { size: "कोबी (२६-२८ सेंटीमीटर)", weight: "१०००-१७०० ग्रॅम", emoji: "🥬", milestones: ["हाथांची पकड शक्ती विकसित", "नख पूर्ण विकसित", "वजन तेजीने वाढणे", "मेंदूच्या नक्षत्रे तयार होणे"] },
+    "33-36": { size: "छोटा कोकम्बर (२९-३० सेंटीमीटर)", weight: "१८००-२४०० ग्रॅम", emoji: "🥒", milestones: ["वजन वेगात वाढणे सुरू", "फुफ्फुसे ९० प्रतीशत विकसित", "हाड काहीशी लवचिक राहते", "बाळ जन्मासाठी स्थिती बदलणे सुरू"] },
+    "37-40": { size: "वाटरमेलन (३०-३५ सेंटीमीटर)", weight: "२८००-३५०० ग्रॅम", emoji: "🍉", milestones: ["जन्मासाठी पूर्णपणे उपयुक्त", "सर्व अवयग पूर्णपणे विकसित", "बाळ जन्मचे स्थिती मिळाले", "जन्मासाठी शरीर तयार"] },
   },
   nutrition: {
     "1-4": { keyNutrient: "फोलिक अँसिड", eat: ["पालक", "मोठे अनाज", "संत्र"], avoid: ["कच्चे अंडे", "कच्चा मांस"] },
