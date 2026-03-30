@@ -1,29 +1,29 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// 🔐 AI PROXY CONFIGURATION
-// Client sends prompts to a backend endpoint instead of provider APIs directly.
+// 🔐 CONTENT PROXY CONFIGURATION
+// Client sends prompts to a backend endpoint instead of external providers directly.
 // Set EXPO_PUBLIC_API_BASE_URL for native/local-dev (example: https://your-app.vercel.app)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
-const AI_PROXY_PATH = "/api/ai";
+const CONTENT_PROXY_PATH = "/api/content";
 
-function getAiProxyUrl() {
+function getContentProxyUrl() {
   if (API_BASE_URL) {
-    return `${API_BASE_URL}${AI_PROXY_PATH}`;
+    return `${API_BASE_URL}${CONTENT_PROXY_PATH}`;
   }
 
   if (typeof window !== "undefined" && window?.location?.origin) {
-    return `${window.location.origin}${AI_PROXY_PATH}`;
+    return `${window.location.origin}${CONTENT_PROXY_PATH}`;
   }
 
-  throw new Error("AI proxy base URL missing. Set EXPO_PUBLIC_API_BASE_URL.");
+  throw new Error("Content endpoint base URL missing. Set EXPO_PUBLIC_API_BASE_URL.");
 }
 
-async function callAI(systemPrompt, userPrompt) {
-  const response = await fetch(getAiProxyUrl(), {
+async function callContent(systemPrompt, userPrompt) {
+  const response = await fetch(getContentProxyUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ systemPrompt, userPrompt }),
+    body: JSON.stringify({ context: systemPrompt, input: userPrompt }),
   });
 
   let data = null;
@@ -34,12 +34,12 @@ async function callAI(systemPrompt, userPrompt) {
   }
 
   if (!response.ok) {
-    throw new Error(data?.error || "AI proxy error");
+    throw new Error(data?.error || "Content endpoint error");
   }
 
   const text = data?.text;
   if (!text) {
-    throw new Error("Empty response from AI proxy");
+    throw new Error("Empty response from content endpoint");
   }
 
   return text;
@@ -444,7 +444,7 @@ Return ONLY this JSON:
 }`;
 
   try {
-    const text = await callAI(MARATHI_SYSTEM, prompt);
+    const text = await callContent(MARATHI_SYSTEM, prompt);
     return safeParseJSON(text) || fallback;
   } catch {
     return fallback;
@@ -472,7 +472,7 @@ Return ONLY this JSON:
 }`;
 
   try {
-    const text = await callAI(MARATHI_SYSTEM, prompt);
+    const text = await callContent(MARATHI_SYSTEM, prompt);
     return safeParseJSON(text) || fallback;
   } catch {
     return fallback;
@@ -509,7 +509,7 @@ Return ONLY this JSON:
 }`;
 
   try {
-    const text = await callAI(MARATHI_SYSTEM, prompt);
+    const text = await callContent(MARATHI_SYSTEM, prompt);
     return safeParseJSON(text) || fallback;
   } catch {
     return fallback;
@@ -542,7 +542,7 @@ Return ONLY this JSON:
 }`;
 
   try {
-    const text = await callAI(MARATHI_SYSTEM, prompt);
+    const text = await callContent(MARATHI_SYSTEM, prompt);
     return safeParseJSON(text) || fallback;
   } catch {
     return fallback;
@@ -950,7 +950,7 @@ Return ONLY this JSON:
 }`;
 
   try {
-    const text = await callAI(MARATHI_SYSTEM, prompt);
+    const text = await callContent(MARATHI_SYSTEM, prompt);
     const parsed = safeParseJSON(text);
     if (!parsed) return fallback;
 
@@ -1002,7 +1002,7 @@ Return ONLY this JSON with at least 12 names:
 }`;
 
   try {
-    const text = await callAI(MARATHI_SYSTEM, prompt);
+    const text = await callContent(MARATHI_SYSTEM, prompt);
     const parsed = safeParseJSON(text);
     return sanitizeNameResults(parsed, { gender, nakshatra, rashi, min: 12 });
   } catch {
@@ -1033,7 +1033,7 @@ Return ONLY this JSON with at least 15 names:
 }`;
 
   try {
-    const text = await callAI(MARATHI_SYSTEM, prompt);
+    const text = await callContent(MARATHI_SYSTEM, prompt);
     const parsed = safeParseJSON(text);
     return sanitizeNameResults(parsed, { letter, gender, origin, min: 15, strictByLetter: true });
   } catch {

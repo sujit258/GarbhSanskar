@@ -62,7 +62,7 @@ async function callGemini(systemPrompt, userPrompt) {
       if (response.ok) {
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("Empty response from Gemini");
-        return { text, provider: `gemini:${model}` };
+        return { payload: text, source: `gemini:${model}` };
       }
 
       lastError = data?.error?.message || "Gemini API Error";
@@ -121,7 +121,7 @@ async function callOpenAI(systemPrompt, userPrompt) {
 
   const text = data?.choices?.[0]?.message?.content;
   if (!text) throw new Error("Empty response from OpenAI");
-  return { text, provider: `openai:${OPENAI_MODEL}` };
+  return { payload: text, source: `openai:${OPENAI_MODEL}` };
 }
 
 async function callGrok(systemPrompt, userPrompt) {
@@ -155,21 +155,21 @@ async function callGrok(systemPrompt, userPrompt) {
 
   const text = data?.choices?.[0]?.message?.content;
   if (!text) throw new Error("Empty response from Grok");
-  return { text, provider: `grok:${GROK_MODEL}` };
+  return { payload: text, source: `grok:${GROK_MODEL}` };
 }
 
-async function callAI(systemPrompt, userPrompt) {
+async function resolveContent(context, input) {
   try {
-    return await callGemini(systemPrompt, userPrompt);
+    return await callGemini(context, input);
   } catch (geminiError) {
     if (!isQuotaOrRateLimitError(geminiError?.message)) {
       throw geminiError;
     }
 
     try {
-      return await callOpenAI(systemPrompt, userPrompt);
+      return await callOpenAI(context, input);
     } catch {
-      return callGrok(systemPrompt, userPrompt);
+      return callGrok(context, input);
     }
   }
 }
@@ -187,16 +187,16 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    const systemPrompt = String(body.systemPrompt || "").trim();
-    const userPrompt = String(body.userPrompt || "").trim();
+    const context = String(body.context || "").trim();
+    const input = String(body.input || "").trim();
 
-    if (!systemPrompt || !userPrompt) {
-      return res.status(400).json({ error: "systemPrompt and userPrompt are required" });
+    if (!context || !input) {
+      return res.status(400).json({ error: "context and input are required" });
     }
 
-    const result = await callAI(systemPrompt, userPrompt);
+    const result = await resolveContent(context, input);
     return res.status(200).json(result);
   } catch (error) {
-    return res.status(500).json({ error: error?.message || "AI proxy error" });
+    return res.status(500).json({ error: error?.message || "Content proxy error" });
   }
 };

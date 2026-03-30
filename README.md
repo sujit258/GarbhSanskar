@@ -48,7 +48,7 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 EXPO_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
 ```
 
-AI provider keys are read by the backend API endpoint (`/api/ai`), not by the mobile/web client.
+AI provider keys are read by the backend API endpoint (`/api/content`), not by the mobile/web client.
 
 The backend uses Gemini first and automatically falls back to OpenAI/Grok on supported failures.
 
@@ -117,7 +117,7 @@ GarbhSanskarApp/
     ├── components/
     │   └── UIComponents.js         # Reusable UI components
     ├── services/
-    │   └── claudeApi.js            # Client-side AI proxy caller + content shaping
+    │   └── claudeApi.js            # Client-side content endpoint caller + content shaping
     ├── constants/
     │   └── theme.js                # Colors, fonts, spacing, data
     └── hooks/
