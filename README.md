@@ -1,6 +1,6 @@
 # 🕉️ गर्भसंस्कार — Marathi AI Pregnancy Tracker
 
-A complete **week-by-week Marathi pregnancy tracker** powered by Claude AI.  
+A complete **week-by-week Marathi pregnancy tracker** powered by AI.  
 AI-powered content across 6 pillars, all in Marathi (Devanagari).
 
 ---
@@ -31,13 +31,15 @@ cd GarbhSanskarApp
 npm install
 ```
 
-### Step 2: Add API keys in `.env`
+### Step 2: Add environment variables in `.env`
 
 Create a `.env` file in project root (copy from `.env.example`) and set:
 
 ```bash
-EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
-EXPO_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
+EXPO_PUBLIC_API_BASE_URL=https://your-app.vercel.app
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+GROK_API_KEY=your_grok_api_key_here
 EXPO_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
@@ -46,11 +48,13 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 EXPO_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
 ```
 
-The app uses Gemini first and automatically falls back to OpenAI on Gemini quota/rate-limit errors.
+AI provider keys are read by the backend API endpoint (`/api/ai`), not by the mobile/web client.
+
+The backend uses Gemini first and automatically falls back to OpenAI/Grok on supported failures.
 
 Google login and cross-device user data sync use Firebase Auth + Firestore.
 
-> ⚠️ `EXPO_PUBLIC_*` values are bundled into the client app. For production, move AI calls to a secure backend proxy.
+> ⚠️ Keep `GEMINI_API_KEY`, `OPENAI_API_KEY`, `GROK_API_KEY` only in server env vars (Vercel Project Settings), never in `EXPO_PUBLIC_*`.
 
 ### Step 3: Start the App
 ```bash
@@ -113,7 +117,7 @@ GarbhSanskarApp/
     ├── components/
     │   └── UIComponents.js         # Reusable UI components
     ├── services/
-    │   └── claudeApi.js            # All Claude AI API calls
+    │   └── claudeApi.js            # Client-side AI proxy caller + content shaping
     ├── constants/
     │   └── theme.js                # Colors, fonts, spacing, data
     └── hooks/
@@ -134,9 +138,9 @@ GarbhSanskarApp/
 
 ---
 
-## 🤖 AI Content (Claude API)
+## 🤖 AI Content (Server Proxy)
 
-All 6 content sections fetch AI-generated Marathi content:
+All 6 content sections fetch AI-generated Marathi content via a server endpoint:
 
 ```
 Week selected → API call with Marathi system prompt → JSON response → Beautiful UI
