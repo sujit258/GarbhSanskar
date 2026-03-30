@@ -1249,3 +1249,63 @@ export async function fetchGarbhGeeta(week) {
     translatedInsights: GARBH_GEETA_REF_TRANSLATED,
   };
 }
+
+export async function fetchPregnancyChatReply({ profile, question, category = "general", history = [] }) {
+  const week = profile?.currentWeek || 1;
+  const motherName = profile?.name || "आई";
+  const trimester = week <= 13 ? "पहिली तिमाही" : week <= 27 ? "दुसरी तिमाही" : "तिसरी तिमाही";
+  const historyText = history
+    .slice(-6)
+    .map((item) => `${item.role === "user" ? "प्रश्न" : "उत्तर"}: ${item.text}`)
+    .join("\n");
+
+  const fallback = {
+    answer: `प्रिय ${motherName}, तुमच्या ${week}व्या आठवड्यात हा प्रश्न महत्त्वाचा आहे. संतुलित आहार, पुरेशी विश्रांती, पाणी, हलकी हालचाल आणि डॉक्टरांनी दिलेल्या सूचनांचे पालन करा. त्रास वाढल्यास डॉक्टरांचा सल्ला घ्या.`,
+    tips: [
+      "आज पुरेसे पाणी प्या आणि हलका पौष्टिक आहार घ्या.",
+      "शरीरात बदल जाणवले तर त्यांची छोटी नोंद ठेवा.",
+      "अस्वस्थता वाढली तर डॉक्टरांशी संपर्क साधा.",
+    ],
+    doctorFlags: [
+      "जास्त रक्तस्राव",
+      "तीव्र पोटदुखी किंवा सतत आकडी",
+      "श्वास घेण्यास त्रास किंवा बाळाची हालचाल कमी जाणवणे",
+    ],
+    disclaimer: "ही माहिती मार्गदर्शनासाठी आहे; वैद्यकीय निर्णयांसाठी डॉक्टरांचा सल्ला घ्या.",
+  };
+
+  const systemPrompt = `तुम्ही गर्भावस्था मार्गदर्शनासाठी मराठी सहाय्यक आहात.
+नियम:
+- फक्त मराठीत उत्तर द्या.
+- प्रश्न गर्भावस्था, प्रसूती तयारी, पोषण, योग, मानसिक आरोग्य, सुरक्षितता यापुरते ठेवा.
+- वैद्यकीय निदान करू नका.
+- गंभीर किंवा रेड-फ्लॅग लक्षणांसाठी डॉक्टर/रुग्णालयाचा सल्ला द्या.
+- उत्तर आश्वासक, संक्षिप्त, आणि कृतीयोग्य असावे.
+- कोणतीही AI, model, provider, API यांचा उल्लेख करू नका.
+IMPORTANT: Respond ONLY with valid JSON.`;
+
+  const prompt = `आईचे नाव: ${motherName}
+सध्याचा आठवडा: ${week}
+तिमाही: ${trimester}
+विषय: ${category}
+
+चालू प्रश्न: ${question}
+
+अलीकडील संवाद:
+${historyText || "नाही"}
+
+Return ONLY this JSON:
+{
+  "answer": "मुख्य उत्तर (80-140 शब्द, उबदार आणि स्पष्ट)",
+  "tips": ["उपयुक्त टिप 1", "उपयुक्त टिप 2", "उपयुक्त टिप 3"],
+  "doctorFlags": ["डॉक्टरांना कधी भेटावे 1", "डॉक्टरांना कधी भेटावे 2", "डॉक्टरांना कधी भेटावे 3"],
+  "disclaimer": "लहान वैद्यकीय सूचना"
+}`;
+
+  try {
+    const text = await callContent(systemPrompt, prompt);
+    return safeParseJSON(text) || fallback;
+  } catch {
+    return fallback;
+  }
+}

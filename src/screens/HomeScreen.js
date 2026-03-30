@@ -52,6 +52,7 @@ const WEEK_SIZES = {
 const QUICK_CARDS = [
   { id: "baby", emoji: "🍼", label: "बाळाची वाढ", color: "#FFE6DE", border: "#D85F3A", text: "#A63F22", iconBg: "#FFD3C6" },
   { id: "talk", emoji: "💬", label: "बाळाशी बोला", color: "#DDF8F3", border: "#169D8C", text: "#0D6F63", iconBg: "#C5F1E9" },
+  { id: "chatbot", emoji: "🤰", label: "सल्ला चॅट", color: "#EEE8FF", border: "#5B4BDB", text: "#4334B3", iconBg: "#DDD2FF" },
   { id: "yoga", emoji: "🧘", label: "योग", color: "#F1E9FF", border: "#7B4FD6", text: "#6037B7", iconBg: "#E1D4FF" },
   { id: "nutrition", emoji: "🥗", label: "पोषण", color: "#E4F7E8", border: "#2C9A57", text: "#1E7841", iconBg: "#CFEFD8" },
   { id: "garbhsanskar", emoji: "🕉️", label: "गर्भसंस्कार", color: "#FFF2D8", border: "#D1952A", text: "#A66D08", iconBg: "#FFE6B0" },
@@ -125,6 +126,10 @@ export default function HomeScreen({ profile, onNavigate, onGoToTab, colors = CO
                 onPress={() => {
                   if (card.id === "names") {
                     onGoToTab?.("names");
+                    return;
+                  }
+                  if (card.id === "chatbot") {
+                    onNavigate("chatbot");
                     return;
                   }
                   onNavigate("weekDetail", { week: currentWeek, tab: card.id });

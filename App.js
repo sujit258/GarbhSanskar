@@ -14,6 +14,7 @@ import WeekDetailScreen from "./src/screens/WeekDetailScreen";
 import NamesScreen from "./src/screens/NamesScreen";
 import CareHubScreen from "./src/screens/CareHubScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import PregnancyChatScreen from "./src/screens/PregnancyChatScreen";
 import VercelAnalytics from "./src/components/VercelAnalytics";
 import { getDailyGeetaShlok } from "./src/services/claudeApi";
 import {
@@ -410,6 +411,15 @@ export default function App() {
         />
       );
     }
+    if (stackEntry?.screen === "chatbot") {
+      return (
+        <PregnancyChatScreen
+          profile={profile}
+          colors={currentColors}
+          isMobileWeb={isMobileWeb}
+        />
+      );
+    }
     return null;
   }
 
@@ -532,7 +542,11 @@ export default function App() {
                     {currentStack ? "आठवड्याचे मार्गदर्शन" : "डॅशबोर्ड"}
                   </Text>
                   <Text style={styles.webPageTitle}>
-                    {currentStack ? `आठवडा ${currentStack.params.week}` : activeTabMeta?.label}
+                    {currentStack
+                      ? currentStack.screen === "weekDetail"
+                        ? `आठवडा ${currentStack.params.week}`
+                        : "सल्ला चॅट"
+                      : activeTabMeta?.label}
                   </Text>
                 </View>
 
@@ -570,7 +584,11 @@ export default function App() {
             <Text style={[styles.backBtnText, { color: currentColors.primary }]}>← मागे</Text>
           </TouchableOpacity>
           <Text style={[styles.stackTitle, { color: currentColors.textPrimary }]}>
-            {currentStack.screen === "weekDetail" ? `आठवडा ${currentStack.params.week}` : ""}
+            {currentStack.screen === "weekDetail"
+              ? `आठवडा ${currentStack.params.week}`
+              : currentStack.screen === "chatbot"
+                ? "सल्ला चॅट"
+                : ""}
           </Text>
           <TouchableOpacity style={styles.mobileDarkToggle} onPress={toggleDarkMode}>
             <Text style={styles.darkModeIcon}>{isDarkMode ? "🌞" : "🌙"}</Text>
