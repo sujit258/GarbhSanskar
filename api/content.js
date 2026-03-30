@@ -62,7 +62,7 @@ async function callGemini(systemPrompt, userPrompt) {
       if (response.ok) {
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("Empty response from Gemini");
-        return { payload: text, source: `gemini:${model}` };
+        return text;
       }
 
       lastError = data?.error?.message || "Gemini API Error";
@@ -121,7 +121,7 @@ async function callOpenAI(systemPrompt, userPrompt) {
 
   const text = data?.choices?.[0]?.message?.content;
   if (!text) throw new Error("Empty response from OpenAI");
-  return { payload: text, source: `openai:${OPENAI_MODEL}` };
+  return text;
 }
 
 async function callGrok(systemPrompt, userPrompt) {
@@ -155,7 +155,7 @@ async function callGrok(systemPrompt, userPrompt) {
 
   const text = data?.choices?.[0]?.message?.content;
   if (!text) throw new Error("Empty response from Grok");
-  return { payload: text, source: `grok:${GROK_MODEL}` };
+  return text;
 }
 
 async function resolveContent(context, input) {
@@ -194,8 +194,8 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: "context and input are required" });
     }
 
-    const result = await resolveContent(context, input);
-    return res.status(200).json(result);
+    const text = await resolveContent(context, input);
+    return res.status(200).json({ text });
   } catch (error) {
     return res.status(500).json({ error: error?.message || "Content proxy error" });
   }
