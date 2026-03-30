@@ -1,15 +1,60 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen({ onGoogleSignIn, colors = COLORS, errorText = "", isBusy = false }) {
   const [localError, setLocalError] = useState("");
   const isWeb = Platform.OS === "web";
 
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    scopes: ["openid", "profile", "email"],
+  });
+
+  useEffect(() => {
+    if (!response) return;
+
+    if (response.type === "error") {
+      setLocalError("Google login अयशस्वी. पुन्हा प्रयत्न करा.");
+      return;
+    }
+
+    if (response.type === "success") {
+      const idToken = response.authentication?.idToken;
+      const accessToken = response.authentication?.accessToken;
+
+      if (!idToken) {
+        setLocalError("Google idToken मिळाला नाही. Google client IDs तपासा.");
+        return;
+      }
+
+      Promise.resolve(onGoogleSignIn?.({ idToken, accessToken })).catch((error) => {
+        setLocalError(error?.message || "Google sign-in failed");
+      });
+    }
+  }, [response]);
+
   async function handleLogin() {
     setLocalError("");
     try {
-      await onGoogleSignIn?.();
+      if (isWeb) {
+        await onGoogleSignIn?.();
+        return;
+      }
+
+      if (!request) {
+        setLocalError("Google sign-in सेटअप पूर्ण नाही. Client IDs तपासा.");
+        return;
+      }
+
+      await promptAsync();
     } catch (error) {
       setLocalError(error?.message || "Google sign-in failed");
     }
@@ -31,7 +76,7 @@ export default function LoginScreen({ onGoogleSignIn, colors = COLORS, errorText
         </TouchableOpacity>
 
         {!isWeb && (
-          <Text style={[styles.note, { color: colors.textSecondary }]}>टीप: या रिलीझमध्ये Google sign-in वेबवर सक्रिय आहे.</Text>
+          <Text style={[styles.note, { color: colors.textSecondary }]}>टीप: iOS/Android साठी Google Client IDs आवश्यक आहेत.</Text>
         )}
 
         {!!(errorText || localError) && (

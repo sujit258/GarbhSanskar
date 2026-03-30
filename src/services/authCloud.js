@@ -3,6 +3,7 @@ import {
   getAuth,
   onAuthStateChanged,
   GoogleAuthProvider,
+  signInWithCredential,
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
@@ -13,9 +14,13 @@ import {
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { Platform } from "react-native";
 
+const webAuthDomain = (Platform.OS === "web" && typeof window !== "undefined")
+  ? window.location.hostname
+  : process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN;
+
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  authDomain: webAuthDomain,
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
@@ -118,16 +123,26 @@ export function getReadableAuthError(error) {
 function isIOSSafari() {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
-  const isIOS = /iPad|iPhone|iPod/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS/.test(ua);
-  const isMobile = /Mobi|Android/i.test(ua);
-  return isIOS || (isSafari && isMobile);
+  const vendor = navigator.vendor || "";
+  const isIOSDevice = /iPad|iPhone|iPod/.test(ua)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isSafariEngine = /Safari/.test(ua) && /Apple Computer/.test(vendor);
+  const isOtherIOSBrowser = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  return isIOSDevice && isSafariEngine && !isOtherIOSBrowser;
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(nativeGoogleTokens = null) {
   if (!auth) throw new Error("Firebase config missing");
+
   if (Platform.OS !== "web") {
-    throw new Error("Google sign-in is currently enabled for web in this release.");
+    const idToken = nativeGoogleTokens?.idToken;
+    if (!idToken) {
+      throw new Error("iOS/Android Google sign-in साठी idToken मिळाला नाही. Google client IDs तपासा.");
+    }
+
+    const credential = GoogleAuthProvider.credential(idToken, nativeGoogleTokens?.accessToken || null);
+    const result = await signInWithCredential(auth, credential);
+    return result.user;
   }
 
   const provider = new GoogleAuthProvider();

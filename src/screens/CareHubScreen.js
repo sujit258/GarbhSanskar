@@ -1,9 +1,13 @@
 import React, { useMemo, useState } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
 } from "react-native";
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { SectionCard, BulletList, PillBadge } from "../components/UIComponents";
+import {
+  scheduleReminderNotification,
+  cancelReminderNotification,
+} from "../services/notifications";
 
 const भावना_पर्याय = ["आनंदी", "शांत", "थकलेली", "चिंताग्रस्त", "उत्साही"];
 const लक्षण_पर्याय = ["उलटी/मळमळ", "पाठदुखी", "पाय सूज", "डोकेदुखी", "झोप कमी", "भूक कमी"];
@@ -111,18 +115,63 @@ export default function CareHubScreen({ profile, careData, onSaveCareData, onUpd
   const reminders = Array.isArray(careData?.reminders) ? careData.reminders : [];
   const moodLogs = Array.isArray(careData?.moodLogs) ? careData.moodLogs : [];
   const hospitalBag = careData?.hospitalBag || {};
+  const notificationMap = careData?.notificationMap || {};
 
   const आजची_नोंद = moodLogs.find((entry) => entry.date === आजचा_दिवस());
 
-  function toggleReminder(id) {
-    const next = reminders.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item));
-    onSaveCareData({ ...careData, reminders: next });
+  async function toggleReminder(id) {
+    const target = reminders.find((item) => item.id === id);
+    if (!target) return;
+
+    const willEnable = !target.enabled;
+    const nextReminders = reminders.map((item) => (item.id === id ? { ...item, enabled: willEnable } : item));
+    const nextNotificationMap = { ...notificationMap };
+
+    try {
+      if (willEnable) {
+        const notificationId = await scheduleReminderNotification({ ...target, enabled: true });
+        if (notificationId) {
+          nextNotificationMap[id] = notificationId;
+        }
+      } else if (nextNotificationMap[id]) {
+        await cancelReminderNotification(nextNotificationMap[id]);
+        delete nextNotificationMap[id];
+      }
+
+      onSaveCareData({
+        ...careData,
+        reminders: nextReminders,
+        notificationMap: nextNotificationMap,
+      });
+    } catch (error) {
+      Alert.alert("स्मरणपत्र", error?.message || "स्मरणपत्र सुरू करता आले नाही.");
+    }
   }
 
-  function quickAddReminder(title, time) {
+  async function quickAddReminder(title, time) {
     const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const next = [...reminders, { id, title, time, enabled: true }];
-    onSaveCareData({ ...careData, reminders: next });
+    const reminder = { id, title, time, enabled: true };
+    const nextReminders = [...reminders, reminder];
+    const nextNotificationMap = { ...notificationMap };
+
+    try {
+      const notificationId = await scheduleReminderNotification(reminder);
+      if (notificationId) {
+        nextNotificationMap[id] = notificationId;
+      }
+
+      onSaveCareData({
+        ...careData,
+        reminders: nextReminders,
+        notificationMap: nextNotificationMap,
+      });
+    } catch (error) {
+      Alert.alert("स्मरणपत्र", error?.message || "नवीन स्मरणपत्र जोडता आले नाही.");
+      onSaveCareData({
+        ...careData,
+        reminders: nextReminders,
+      });
+    }
   }
 
   function toggleSymptom(symptom) {

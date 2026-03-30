@@ -43,6 +43,7 @@ function getDefaultCareData() {
       { id: "r3", title: "१० मिनिटे चालणे", time: "सायंकाळी ६:००", enabled: true },
     ],
     moodLogs: [],
+    notificationMap: {},
     hospitalBag: {
       "ओळखपत्रे व कागदपत्रे": false,
       "आरामदायी कपडे": false,
@@ -96,6 +97,14 @@ export default function App() {
         setIsAuthReady(true);
         setIsLoading(false);
         return;
+      }
+
+      try {
+        await tryCompleteRedirectSignIn();
+      } catch (error) {
+        if (mounted) {
+          setLoginError(getReadableAuthError(error));
+        }
       }
 
       unsubscribe = observeAuth(async (user) => {
@@ -197,11 +206,6 @@ export default function App() {
           setIsLoading(false);
         }
       });
-
-      tryCompleteRedirectSignIn().catch((error) => {
-        if (!mounted) return;
-        setLoginError(getReadableAuthError(error));
-      });
     }
 
     setupAuth();
@@ -295,11 +299,11 @@ export default function App() {
     }
   }
 
-  async function handleGoogleLogin() {
+  async function handleGoogleLogin(nativeGoogleTokens = null) {
     setLoginError("");
     setIsLoggingIn(true);
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(nativeGoogleTokens);
     } catch (e) {
       setLoginError(getReadableAuthError(e));
     } finally {
