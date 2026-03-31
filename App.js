@@ -595,6 +595,15 @@ export default function App() {
           </TouchableOpacity>
         </View>
         {renderDetailScreen(currentStack)}
+        <TouchableOpacity
+          style={[styles.chatFab, { backgroundColor: currentColors.primary, borderColor: currentColors.primaryDark }]}
+          onPress={() => navigate("chatbot")}
+          accessibilityRole="button"
+          accessibilityLabel="सल्ला चॅट उघडा"
+        >
+          <Text style={styles.chatFabIcon}>💬</Text>
+          <Text style={styles.chatFabText}>चॅट</Text>
+        </TouchableOpacity>
         <View style={[styles.bottomNav, { backgroundColor: currentColors.bgCard, borderTopColor: currentColors.border }]}> 
           {NAV_TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -639,6 +648,16 @@ export default function App() {
       </View>
 
       <View style={styles.content}>{renderMainScreen()}</View>
+
+      <TouchableOpacity
+        style={[styles.chatFab, { backgroundColor: currentColors.primary, borderColor: currentColors.primaryDark }]}
+        onPress={() => navigate("chatbot")}
+        accessibilityRole="button"
+        accessibilityLabel="सल्ला चॅट उघडा"
+      >
+        <Text style={styles.chatFabIcon}>💬</Text>
+        <Text style={styles.chatFabText}>चॅट</Text>
+      </TouchableOpacity>
 
       <View style={[styles.bottomNav, { backgroundColor: currentColors.bgCard, borderTopColor: currentColors.border }]}> 
         {NAV_TABS.map((tab) => {
@@ -704,6 +723,28 @@ const styles = StyleSheet.create({
   weekBadgeNum: { fontSize: FONTS.h3, fontWeight: "800", color: COLORS.textWhite },
   weekBadgeLabel: { fontSize: FONTS.tiny, color: "rgba(255,255,255,0.8)" },
   content: { flex: 1 },
+  chatFab: {
+    position: "absolute",
+    right: SPACING.md,
+    bottom: Platform.OS === "ios" ? 88 : 82,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    ...SHADOWS.md,
+    zIndex: 30,
+  },
+  chatFabIcon: {
+    fontSize: 18,
+  },
+  chatFabText: {
+    color: COLORS.textWhite,
+    fontSize: FONTS.small,
+    fontWeight: "800",
+  },
   bottomNav: {
     flexDirection: "row",
     backgroundColor: COLORS.bgCard,
