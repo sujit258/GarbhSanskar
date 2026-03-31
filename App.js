@@ -91,12 +91,12 @@ export default function App() {
     loadUiPrefs();
   }, []);
 
-  // Dismiss native splash as soon as auth state is resolved
+  // Dismiss native splash on mount; app-level loader handles auth wait state
   useEffect(() => {
-    if (isAuthReady && !IS_WEB) {
+    if (!IS_WEB) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [isAuthReady]);
+  }, []);
 
   useEffect(() => {
     let mounted = true;

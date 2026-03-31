@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput,
 } from "react-native";
@@ -29,9 +29,21 @@ export default function PregnancyChatScreen({ profile, colors = COLORS, isMobile
   const [customQuestion, setCustomQuestion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const scrollViewRef = useRef(null);
   const currentWeek = profile?.currentWeek || 1;
   const trimester = currentWeek <= 13 ? "पहिली तिमाही" : currentWeek <= 27 ? "दुसरी तिमाही" : "तिसरी तिमाही";
-  const presetQuestions = useMemo(() => getQuestionsForCategory(selectedCategory), [selectedCategory]);
+  const presetQuestions = useMemo(
+    () => getQuestionsForCategory(selectedCategory, currentWeek),
+    [selectedCategory, currentWeek]
+  );
+
+  // Auto-scroll to bottom whenever a new message is added or loading starts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [messages.length, isLoading]);
 
   async function askQuestion(question, category = selectedCategory) {
     const trimmed = String(question || "").trim();
@@ -92,6 +104,7 @@ export default function PregnancyChatScreen({ profile, colors = COLORS, isMobile
 
   return (
     <ScrollView
+      ref={scrollViewRef}
       style={[styles.container, { backgroundColor: colors.bg }]}
       contentContainerStyle={[styles.content, isMobileWeb && styles.mobileContent]}
       showsVerticalScrollIndicator={false}
