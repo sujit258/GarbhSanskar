@@ -130,6 +130,7 @@ export default function App() {
           setCareData(getDefaultCareData());
           setNeedsReOnboarding(false);
           setNavigationStack([]);
+          setActiveTab("home");
           setIsAuthReady(true);
           setIsLoading(false);
           return;
@@ -324,16 +325,22 @@ export default function App() {
   }
 
   async function handleSignOut() {
+    // Show loading screen immediately so there's no blank white gap
+    setIsLoading(true);
     try {
       await signOutUser();
+      // Auth observer will fire with user=null and clear state + set isLoading false
+    } catch (e) {
+      console.error("Sign out error", e);
+      // On error, manually restore a clean logged-out state
       setProfile(null);
       setSavedNames([]);
       setCareData(getDefaultCareData());
       setNavigationStack([]);
       setActiveTab("home");
       setNeedsReOnboarding(false);
-    } catch (e) {
-      console.error("Sign out error", e);
+      setAuthUser(null);
+      setIsLoading(false);
     }
   }
 
