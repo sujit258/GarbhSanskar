@@ -7,14 +7,59 @@ import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen({ onGoogleSignIn, colors = COLORS, errorText = "", isBusy = false }) {
-  const [localError, setLocalError] = useState("");
   const isWeb = Platform.OS === "web";
+
+  if (isWeb) {
+    return (
+      <WebLogin
+        onGoogleSignIn={onGoogleSignIn}
+        colors={colors}
+        errorText={errorText}
+        isBusy={isBusy}
+      />
+    );
+  }
+
+  return (
+    <NativeLogin
+      onGoogleSignIn={onGoogleSignIn}
+      colors={colors}
+      errorText={errorText}
+      isBusy={isBusy}
+    />
+  );
+}
+
+function WebLogin({ onGoogleSignIn, colors, errorText, isBusy }) {
+  const [localError, setLocalError] = useState("");
+
+  async function handleLogin() {
+    setLocalError("");
+    try {
+      await onGoogleSignIn?.();
+    } catch (error) {
+      setLocalError(error?.message || "Google sign-in failed");
+    }
+  }
+
+  return renderLoginCard({
+    colors,
+    isBusy,
+    buttonLabel: isBusy ? "कृपया थांबा..." : "Google ने सुरू करा",
+    onPress: handleLogin,
+    errorText,
+    localError,
+    showNativeNote: false,
+  });
+}
+
+function NativeLogin({ onGoogleSignIn, colors, errorText, isBusy }) {
+  const [localError, setLocalError] = useState("");
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: process.env.EXPO_PUBLIC_GOOGLE_EXPO_CLIENT_ID,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     scopes: ["openid", "profile", "email"],
   });
 
@@ -44,11 +89,6 @@ export default function LoginScreen({ onGoogleSignIn, colors = COLORS, errorText
   async function handleLogin() {
     setLocalError("");
     try {
-      if (isWeb) {
-        await onGoogleSignIn?.();
-        return;
-      }
-
       if (!request) {
         setLocalError("Google sign-in सेटअप पूर्ण नाही. Client IDs तपासा.");
         return;
@@ -60,6 +100,26 @@ export default function LoginScreen({ onGoogleSignIn, colors = COLORS, errorText
     }
   }
 
+  return renderLoginCard({
+    colors,
+    isBusy,
+    buttonLabel: isBusy ? "कृपया थांबा..." : "Google ने सुरू करा",
+    onPress: handleLogin,
+    errorText,
+    localError,
+    showNativeNote: true,
+  });
+}
+
+function renderLoginCard({
+  colors,
+  isBusy,
+  buttonLabel,
+  onPress,
+  errorText,
+  localError,
+  showNativeNote,
+}) {
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.borderLight }]}> 
@@ -69,13 +129,13 @@ export default function LoginScreen({ onGoogleSignIn, colors = COLORS, errorText
 
         <TouchableOpacity
           style={[styles.googleBtn, { backgroundColor: colors.primary }, isBusy && styles.googleBtnDisabled]}
-          onPress={handleLogin}
+          onPress={onPress}
           disabled={isBusy}
         >
-          <Text style={styles.googleBtnText}>{isBusy ? "कृपया थांबा..." : "Google ने सुरू करा"}</Text>
+          <Text style={styles.googleBtnText}>{buttonLabel}</Text>
         </TouchableOpacity>
 
-        {!isWeb && (
+        {showNativeNote && (
           <Text style={[styles.note, { color: colors.textSecondary }]}>टीप: iOS/Android साठी Google Client IDs आवश्यक आहेत.</Text>
         )}
 
