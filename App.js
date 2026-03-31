@@ -40,6 +40,47 @@ const getProfileCacheKey = (uid) => `garbh_profile_${uid}`;
 const getNamesCacheKey = (uid) => `garbh_names_${uid}`;
 const getCareCacheKey = (uid) => `garbh_care_${uid}`;
 
+class LoginErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, message: "" };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      message: error?.message || "Login screen failed to load",
+    };
+  }
+
+  componentDidCatch(error) {
+    console.error("Login screen render error", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={[styles.loginFallbackRoot, { backgroundColor: this.props.colors?.bg || COLORS.bg }]}>
+          <Text style={styles.loginFallbackEmoji}>🕉️</Text>
+          <Text style={[styles.loginFallbackTitle, { color: this.props.colors?.textPrimary || COLORS.textPrimary }]}>गर्भसंस्कार</Text>
+          <Text style={[styles.loginFallbackText, { color: this.props.colors?.textSecondary || COLORS.textSecondary }]}>लॉगिन स्क्रीन लोड होत नाही. कृपया पुन्हा प्रयत्न करा.</Text>
+          <TouchableOpacity
+            style={[styles.loginFallbackBtn, { backgroundColor: this.props.colors?.primary || COLORS.primary }]}
+            onPress={this.props.onRetry}
+          >
+            <Text style={styles.loginFallbackBtnText}>पुन्हा प्रयत्न करा</Text>
+          </TouchableOpacity>
+          {!!this.state.message && (
+            <Text style={[styles.loginFallbackError, { color: this.props.colors?.error || COLORS.error }]}>{this.state.message}</Text>
+          )}
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function getDefaultCareData() {
   return {
     reminders: [
@@ -82,6 +123,7 @@ export default function App() {
   const [careData, setCareData] = useState(getDefaultCareData());
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [needsReOnboarding, setNeedsReOnboarding] = useState(false);
+  const [loginScreenKey, setLoginScreenKey] = useState(0);
 
   const currentColors = isDarkMode ? COLORS_DARK : COLORS;
   const isMobileWeb = IS_WEB && width < 900;
@@ -461,12 +503,18 @@ export default function App() {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: currentColors.bg }]}> 
         <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={currentColors.bg} />
-        <LoginScreen
-          onGoogleSignIn={handleGoogleLogin}
-          isBusy={isLoggingIn}
-          errorText={loginError}
+        <LoginErrorBoundary
+          key={loginScreenKey}
           colors={currentColors}
-        />
+          onRetry={() => setLoginScreenKey((prev) => prev + 1)}
+        >
+          <LoginScreen
+            onGoogleSignIn={handleGoogleLogin}
+            isBusy={isLoggingIn}
+            errorText={loginError}
+            colors={currentColors}
+          />
+        </LoginErrorBoundary>
         <VercelAnalytics />
       </SafeAreaView>
     );
@@ -717,6 +765,37 @@ const styles = StyleSheet.create({
   splashEmoji: { fontSize: 72, marginBottom: SPACING.md },
   splashTitle: { fontSize: FONTS.h1, fontWeight: "800", color: COLORS.textPrimary },
   splashSubtitle: { fontSize: FONTS.body, color: COLORS.textSecondary, marginTop: SPACING.sm },
+  loginFallbackRoot: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: SPACING.lg,
+  },
+  loginFallbackEmoji: { fontSize: 56, marginBottom: SPACING.sm },
+  loginFallbackTitle: { fontSize: FONTS.h2, fontWeight: "800" },
+  loginFallbackText: {
+    marginTop: SPACING.sm,
+    fontSize: FONTS.body,
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  loginFallbackBtn: {
+    marginTop: SPACING.lg,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    ...SHADOWS.sm,
+  },
+  loginFallbackBtnText: {
+    color: COLORS.textWhite,
+    fontSize: FONTS.body,
+    fontWeight: "800",
+  },
+  loginFallbackError: {
+    marginTop: SPACING.md,
+    fontSize: FONTS.small,
+    textAlign: "center",
+  },
   topHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
