@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, StatusBar, Platform, useWindowDimensions,
+  SafeAreaView, StatusBar, Platform, useWindowDimensions, ActivityIndicator,
 } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, getColors, COLORS_DARK } from "./src/constants/theme";
 import { setUIColors } from "./src/components/UIComponents";
@@ -28,6 +29,9 @@ import {
   signOutUser,
   getReadableAuthError,
 } from "./src/services/authCloud";
+
+// Keep the native splash visible until auth state is resolved
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const DARK_MODE_KEY = "garbh_dark_mode";
 const IS_WEB = Platform.OS === "web";
@@ -86,6 +90,13 @@ export default function App() {
   useEffect(() => {
     loadUiPrefs();
   }, []);
+
+  // Dismiss native splash as soon as auth state is resolved
+  useEffect(() => {
+    if (isAuthReady && !IS_WEB) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isAuthReady]);
 
   useEffect(() => {
     let mounted = true;
@@ -426,8 +437,14 @@ export default function App() {
   if (isLoading || !isAuthReady) {
     return (
       <View style={styles.splashScreen}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.bg} />
         <Text style={styles.splashEmoji}>🕉️</Text>
         <Text style={styles.splashTitle}>गर्भसंस्कार</Text>
+        <ActivityIndicator
+          size="large"
+          color={COLORS.primary}
+          style={{ marginTop: SPACING.lg, marginBottom: SPACING.sm }}
+        />
         <Text style={styles.splashSubtitle}>लोड होत आहे...</Text>
       </View>
     );
